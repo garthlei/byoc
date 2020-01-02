@@ -606,6 +606,8 @@ set CHIPSET_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/common/fpga_bridge/fpga_send/rtl/fpga_net_chooser_32.v" \
     "${DV_ROOT}/design/common/fpga_bridge/fpga_send/rtl/fpga_bridge_send_32.v" \
     "${DV_ROOT}/design/common/fpga_bridge/fpga_rcv/rtl/fpga_bridge_rcv_32.v" \
+    "${DV_ROOT}/design/chipset/accelerators/rtl/nvlink_top.v" \
+    "${DV_ROOT}/design/chipset/accelerators/rtl/axi2apb.v" \
     "${DV_ROOT}/design/chipset/mem_io_splitter/rtl/mem_io_splitter.v" \
     "${DV_ROOT}/design/chipset/mem_io_splitter/rtl/iob_splitter.v" \
     "${DV_ROOT}/design/chipset/mem_io_splitter/rtl/uart_boot_splitter.v" \
