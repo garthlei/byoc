@@ -53,7 +53,16 @@ module nvlink_top #(
     output                                  noc3_out_val,
     output      [`NOC_DATA_WIDTH-1:0]       noc3_out_data,
     input                                   noc3_out_rdy,
+   
+`ifdef PITON_FPGA_NVDLA
+    output                                  noc2_out_val,
+    output      [`NOC_DATA_WIDTH-1:0]       noc2_out_data,
+    input                                   noc2_out_rdy,
 
+    input                                   noc3_in_val,
+    input       [`NOC_DATA_WIDTH-1:0]       noc3_in_data,
+    output                                  noc3_in_rdy
+`endif
 
 
 );
@@ -63,7 +72,7 @@ module nvlink_top #(
 
 // apb <-> axi
 //axilite signals
-wire [12:0]                     apb_axi_awaddr;
+wire [31:0]                     apb_axi_awaddr;
 wire                            apb_axi_awvalid;
 wire                            apb_axi_awready;
 
@@ -76,7 +85,7 @@ wire [1:0]                      apb_axi_bresp;
 wire                            apb_axi_bvalid;
 wire                            apb_axi_bready;
 
-wire [12:0]                     apb_axi_araddr;
+wire [31:0]                     apb_axi_araddr;
 wire                            apb_axi_arvalid;
 wire                            apb_axi_arready;
 
@@ -84,6 +93,30 @@ wire [31:0]                     apb_axi_rdata;
 wire [1:0]                      apb_axi_rresp;
 wire                            apb_axi_rvalid;
 wire                            apb_axi_rready;
+
+// noc <-> axi
+//axilite signals
+wire [31:0]                     noc_axi_awaddr;
+wire                            noc_axi_awvalid;
+wire                            noc_axi_awready;
+
+wire [63:0]                     noc_axi_wdata;
+wire [7:0]                      noc_axi_wstrb;
+wire                            noc_axi_wvalid;
+wire                            noc_axi_wready;
+
+wire [1:0]                      noc_axi_bresp;
+wire                            noc_axi_bvalid;
+wire                            noc_axi_bready;
+
+wire [31:0]                     noc_axi_araddr;
+wire                            noc_axi_arvalid;
+wire                            noc_axi_arready;
+
+wire [63:0]                     noc_axi_rdata;
+wire [1:0]                      noc_axi_rresp;
+wire                            noc_axi_rvalid;
+wire                            noc_axi_rready;
 
 //apb signals
 wire 			        penable;
@@ -250,7 +283,57 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .pwdata         (pwdata                ),
     .prdata         (prdata                ),
     .pready         (pready                ),
-    .pslverr        (pslverr               )
+    .pslverr        (pslverr               ),
+
+    //axi signals
+    .nvdla_core2dbb_awvalid            ( noc_axi_awvalid ),
+    .nvdla_core2dbb_awready            ( noc_axi_awready ), 
+    .nvdla_core2dbb_awid               (  ),
+    .nvdla_core2dbb_awlen              (  ),
+    .nvdla_core2dbb_awaddr             ( noc_axi_awaddr  ),
+				   
+    .nvdla_core2dbb_wvalid             ( noc_axi_wvalid ),
+    .nvdla_core2dbb_wready             ( noc_axi_wready ),
+    .nvdla_core2dbb_wdata              ( noc_axi_wdata ),
+    .nvdla_core2dbb_wstrb              ( noc_axi_wstrb ),
+    .nvdla_core2dbb_wlast              (  ),
+				   
+    .nvdla_core2dbb_arvalid            ( noc_axi_arvalid ),
+    .nvdla_core2dbb_arready            ( noc_axi_arready ),
+    .nvdla_core2dbb_arid               (  ),
+    .nvdla_core2dbb_arlen              (  ),
+    .nvdla_core2dbb_araddr             ( noc_axi_araddr ),
+				   
+    .nvdla_core2dbb_bresp              ( noc_axi_bresp   ),
+    .nvdla_core2dbb_bvalid             ( noc_axi_bvalid ),
+    .nvdla_core2dbb_bready             ( noc_axi_bready ),
+    .nvdla_core2dbb_bid                (  ),
+				   
+    .nvdla_core2dbb_rvalid             ( noc_axi_rvalid ),
+    .nvdla_core2dbb_rready             ( noc_axi_rready ),
+    .nvdla_core2dbb_rid                (  ),
+    .nvdla_core2dbb_rlast              (  ),
+    .nvdla_core2dbb_rdata              ( noc_axi_rdata ),
+    .nvdla_core2dbb_rresp              ( noc_axi_rresp ),
+				   
+    .nvdla_core2dbb_awsize             (  ),
+    .nvdla_core2dbb_arsize             (  ),
+    .nvdla_core2dbb_awburst            (  ),
+    .nvdla_core2dbb_arburst            (  ),
+    .nvdla_core2dbb_awlock             (  ),
+    .nvdla_core2dbb_arlock             (  ),
+    .nvdla_core2dbb_awcache            (  ),
+    .nvdla_core2dbb_arcache            (  ),
+    .nvdla_core2dbb_awprot             (  ),
+    .nvdla_core2dbb_arprot             (  ),
+    .nvdla_core2dbb_awqos              (  ),
+    .nvdla_core2dbb_awatop             (  ),
+    .nvdla_core2dbb_awregion           (  ),
+    .nvdla_core2dbb_arqos              (  ),
+    .nvdla_core2dbb_arregion           (  ),
+				   
+   //General Output Signal
+   .dla_intr                           (                 )
 );
 
 `else   // PITON_FPGA_ETHERNETLITE
