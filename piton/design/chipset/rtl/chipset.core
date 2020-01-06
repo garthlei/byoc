@@ -16,6 +16,7 @@ filesets:
             - openpiton::noc_axilite_bridge
             - "tool_vivado? (openpiton::noc_sd_bridge)"
             - openpiton::io_ctrl
+            - openpiton::accelerators
             - openpiton::io_xbar
             - "tool_vivado? (openpiton::oled)"
         file_type: verilogSource-2001

@@ -33,12 +33,12 @@
 //--------------------------------------------------
 
 module nvlink_top #(
-    parameter int unsigned AXI_ADDR_WIDTH   = 32,
-    parameter int unsigned AXI_DATA_WIDTH   = 32,
-    parameter int unsigned AXI_USER_WIDTH   = 6,
-    parameter int unsigned AXI_ID_WIDTH     = 6,
-    parameter int unsigned APB_ADDR_WIDTH   = 32,
-    parameter int unsigned APB_DATA_WIDTH   = 32
+    parameter AXI_ADDR_WIDTH   = 32,
+    parameter AXI_DATA_WIDTH   = 32,
+    parameter AXI_USER_WIDTH   = 6,
+    parameter AXI_ID_WIDTH     = 6,
+    parameter APB_ADDR_WIDTH   = 32,
+    parameter APB_DATA_WIDTH   = 32
 ) (
     input                                   chipset_clk,
 
@@ -52,9 +52,10 @@ module nvlink_top #(
 
     output                                  noc3_out_val,
     output      [`NOC_DATA_WIDTH-1:0]       noc3_out_data,
-    input                                   noc3_out_rdy,
+    input                                   noc3_out_rdy
    
-`ifdef PITON_FPGA_NVDLA
+//`ifdef PITON_FPGA_NVDLA
+    ,
     output                                  noc2_out_val,
     output      [`NOC_DATA_WIDTH-1:0]       noc2_out_data,
     input                                   noc2_out_rdy,
@@ -62,7 +63,7 @@ module nvlink_top #(
     input                                   noc3_in_val,
     input       [`NOC_DATA_WIDTH-1:0]       noc3_in_data,
     output                                  noc3_in_rdy
-`endif
+//`endif
 
 
 );
