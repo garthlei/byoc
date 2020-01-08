@@ -38,7 +38,8 @@ module nvlink_top #(
     parameter AXI_USER_WIDTH   = 6,
     parameter AXI_ID_WIDTH     = 6,
     parameter APB_ADDR_WIDTH   = 32,
-    parameter APB_DATA_WIDTH   = 32
+    parameter APB_DATA_WIDTH   = 32,
+    parameter SWAP_ENDIANESS = 0
 ) (
     input                                   chipset_clk,
 
@@ -68,7 +69,9 @@ module nvlink_top #(
 
 );
 
-`ifdef PITON_FPGA_NVDLA
+//`ifdef PITON_FPGA_NVDLA
+
+ 
 
 
 // apb <-> axi
@@ -152,8 +155,17 @@ wire blank_user = 6'b0;
 wire blank_qos = 4'b0;
 wire blank_last = 1'b0;
 
+//Test
+   //assign prdata = 32'b1110;
+   //assign pready = 1'b1;
+   //assign pslverr = 1'b0;
+   
+
 //CPU -->AXILITE
-noc_axilite_bridge  noc_nvlink_bridge (
+noc_axilite_bridge #(
+    .SLAVE_RESP_BYTEWIDTH   (4),
+    .SWAP_ENDIANESS         (SWAP_ENDIANESS)
+)  noc_nvlink_bridge (
     .clk                    (chipset_clk        ),
     .rst                    (~rst_n             ),      // TODO: rewrite to positive ?
 
@@ -269,6 +281,7 @@ axi2apb #(
             .PSLVERR    ( pslverr                )
         );
 
+`ifdef PITON_FPGA_NVDLA
 //APB -->NVDLA
 NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .dla_core_clk   (chipset_clk        ),
@@ -337,11 +350,11 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
    .dla_intr                           (                 )
 );
 
-`else   // PITON_FPGA_ETHERNETLITE
+//`else   // PITON_FPGA_ETHERNETLITE
 
-    assign noc2_in_rdy    = 1'b0;
-    assign noc3_out_val    = 1'b0;
-    assign noc3_out_data   = {`NOC_DATA_WIDTH{1'b0}};
+//    assign noc2_in_rdy    = 1'b0;
+//    assign noc3_out_val    = 1'b0;
+//    assign noc3_out_data   = {`NOC_DATA_WIDTH{1'b0}};
 
 
 

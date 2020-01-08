@@ -1,3 +1,4 @@
+NV_NVDLA_wrapper.v
 hw/outdir/nv_small/vmod/nvdla/top/NV_nvdla.v
 hw/outdir/nv_small/vmod/nvdla/apb2csb/NV_NVDLA_apb2csb.v
 hw/outdir/nv_small/vmod/nvdla/top/NV_NVDLA_partition_c.v

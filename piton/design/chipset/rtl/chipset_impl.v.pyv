@@ -1117,26 +1117,27 @@ fake_uart fake_uart (
 //Connects the nvlink to the chipset for NVDLA_small
 nvlink_top  nvlink_top (
     //General signals
-    .chipset_clk            (clk                  ),
-    .rst_n                  (rst_n                ),
+    .chipset_clk            (chipset_clk          ),
+    .rst_n                  (chipset_rst_n        ),
 
     // Configuration Signals
-    .noc2_in_val             (buf_nv_noc2_valid   ),
-    .noc2_in_data            (buf_nv_noc2_data    ),
-    .noc2_in_rdy             (nv_buf_noc2_ready   ),
+    .noc2_in_val             (buf_nvlink_noc2_valid   ),
+    .noc2_in_data            (buf_nvlink_noc2_data    ),
+    .noc2_in_rdy             (nvlink_buf_noc2_ready   ),
 
-    .noc2_out_val            (nv_buf_noc2_valid   ),
-    .noc2_out_data           (nv_buf_noc2_data    ),
-    .noc2_out_rdy            (buf_nv_noc2_ready   ),
+    .noc3_out_val            (nvlink_buf_noc3_valid   ),
+    .noc3_out_data           (nvlink_buf_noc3_data    ),
+    .noc3_out_rdy            (buf_nvlink_noc3_ready   ),
 
     //Memory access signals
-    .noc3_in_val             (buf_nv_noc3_valid   ),
-    .noc3_in_data            (buf_nv_noc3_data    ),
-    .noc3_in_rdy             (nv_buf_noc3_ready   ),
+    .noc2_out_val            (nvlink_buf_noc2_valid   ),
+    .noc2_out_data           (nvlink_buf_noc2_data    ),
+    .noc2_out_rdy            (buf_nvlink_noc2_ready   ),
 
-    .noc3_out_val            (nv_buf_noc3_valid   ),
-    .noc3_out_data           (nv_buf_noc3_data    ),
-    .noc3_out_rdy            (buf_nv_noc3_ready   )
+    .noc3_in_val             (buf_nvlink_noc3_valid   ),
+    .noc3_in_data            (buf_nvlink_noc3_data    ),
+    .noc3_in_rdy             (nvlink_buf_noc3_ready   )
+
 
 );
 
