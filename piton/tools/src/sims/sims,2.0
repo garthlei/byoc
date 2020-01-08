@@ -1465,7 +1465,7 @@ sub generic_sim_build
       $build_cmd .= $lib_path;
 
       # the ariane files do not contain the timescale
-      if ($opt{ariane}) {
+      if ($opt{ariane} or $opt{blackparrot}) {
         $build_cmd .= " -timescale=1ps/1ps ";
       }
     }
@@ -2635,7 +2635,7 @@ sub parse_args
   $ENV{PITON_PICO_HET} = $opt{pico_het};
   $ENV{PITON_ARIANE}   = $opt{ariane};
   $ENV{PITON_BLACKPARROT} = $opt{blackparrot};
-  $ENV{BSG_IP_CORES_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/basejump_stl";
+  $ENV{BASEJUMP_STL_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/external/basejump_stl";
   $ENV{BP_COMMON_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_common";
   $ENV{BP_FE_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_fe";
   $ENV{BP_ME_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_me";
