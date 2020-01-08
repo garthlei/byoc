@@ -1,36 +1,20 @@
 
 `include "iop.h"
 module bp_l15_decoder
- import bp_common_pkg::*;
- import bp_common_aviary_pkg::*;
- #(parameter bp_cfg_e cfg_p = e_bp_inv_cfg
-   `declare_bp_proc_params(cfg_p)
-   `declare_bp_me_if_widths(paddr_width_p, cce_block_width_p, num_lce_p, lce_assoc_p, mem_payload_width_p)
-   )
   (input clk_i
    , input reset_i
 
    // BP -> L1.5 
-   , input [cce_mem_cmd_width_lp-1:0]                  mem_cmd_i
-   , input                                             mem_cmd_v_i
-   , output                                            mem_cmd_yumi_o
-
-   , input [cce_mem_data_cmd_width_lp-1:0]             mem_data_cmd_i
-   , input                                             mem_data_cmd_v_i
-   , output                                            mem_data_cmd_yumi_o
 
    // OpenPiton side
    , output logic [4:0]                                transducer_l15_rqtype
    , output logic [2:0]                                transducer_l15_size
-   , output logic [paddr_width_p-1:0]                  transducer_l15_address
+   , output logic [39:0]                               transducer_l15_address
    , output logic [63:0]                               transducer_l15_data
    , output logic                                      transducer_l15_nc
    , output logic                                      transducer_l15_val
    , input                                             l15_transducer_ack
    , input                                             l15_transducer_header_ack
-
-   , output logic [mem_payload_width_p-1:0]            mem_payload
-   , output bp_lce_cce_nc_req_size_e                   nc_size
 
    // Unused OpenPiton side connections
    , output [3:0]                                      transducer_l15_amo_op
@@ -44,8 +28,7 @@ module bp_l15_decoder
    , output                                            transducer_l15_csm_data
    );
 
-  `declare_bp_me_if(paddr_width_p, cce_block_width_p, num_lce_p, lce_assoc_p, mem_payload_width_p)
-  
+  /*
   wire unused = &{l15_transducer_header_ack};
 
   bp_cce_mem_cmd_s mem_cmd_cast_i;
@@ -107,6 +90,7 @@ module bp_l15_decoder
   assign transducer_l15_l1rplway               = '0;
   assign transducer_l15_data_next_entry        = '0;
   assign transducer_l15_csm_data               = '0;
+  */
 
 endmodule 
   
