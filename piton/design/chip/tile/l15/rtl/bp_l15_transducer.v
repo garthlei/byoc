@@ -4,7 +4,24 @@ module bp_l15_transducer
   (input clk_i
    , input reset_i
 
-   // BP -> L1.5 
+   // BP -> L1.5
+   //
+   // Status signals
+   , output                                            ready_o
+   //, output                                            cache_miss_o
+
+   // Miss type
+   , input                                             load_miss_i
+   //, input                                             store_miss_i
+   //, input                                             lr_miss_i
+   //, input                                             uncached_load_req_i
+   //, input                                             uncached_store_req_i
+   // Miss info
+   , input [39:0]                                      miss_addr_i
+   , input [2:0]                                       lru_way_i
+   //, input [7:0]                                       dirty_i
+   //, input [63:0]                                      store_data_o
+   //, input [1:0]                                       size_op_o
 
    // OpenPiton side
    , output [4:0]                                      transducer_l15_rqtype
@@ -34,6 +51,18 @@ module bp_l15_transducer
    , output                                            transducer_l15_csm_data
 
    // L1.5 -> BP
+   , output [522:0]                                    data_mem_pkt_o
+   , output                                            data_mem_pkt_v_o
+   , input                                             data_mem_pkt_yumi_i
+
+   , output [41:0]                                     tag_mem_pkt_o
+   , output                                            tag_mem_pkt_v_o
+   , input                                             tag_mem_pkt_yumi_i
+
+   , output [10:0]                                     stat_mem_pkt_o
+   , output                                            stat_mem_pkt_v_o
+   , input                                             stat_mem_pkt_yumi_i
+
    );
 
    /*

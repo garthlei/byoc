@@ -826,6 +826,16 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
     //////////////////////
     // BlackParrot Core //
     //////////////////////
+    logic l15_ready_lo;
+    logic load_miss_lo;
+    logic [39:0] miss_addr_lo;
+    logic [2:0] lru_way_lo;
+    logic [522:0] data_mem_pkt_li;
+    logic data_mem_pkt_v_li, data_mem_pkt_yumi_lo;
+    logic [41:0] tag_mem_pkt_li;
+    logic tag_mem_pkt_v_li, tag_mem_pkt_yumi_lo;
+    logic [10:0] stat_mem_pkt_li;
+    logic stat_mem_pkt_v_li, stat_mem_pkt_yumi_lo;
     bp_core_minimal proc (
         .clk_i                             (clk_gated),
         .reset_i                           (~rst_n_f),
@@ -840,13 +850,13 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         // Miss interface
         //
-        .load_miss_o(),
+        .ready_i(l15_ready_lo),
+        .cache_miss_i('0),
+        .load_miss_o(load_miss_lo),
         .store_miss_o(),
         .lr_miss_o(),
-        .ready_i('0),
-        .cache_miss_i('0),
-        .miss_addr_o(),
-        .lru_way_o(),
+        .miss_addr_o(miss_addr_lo),
+        .lru_way_o(lru_way_lo),
         .dirty_o(),
 
         // Writeback interface
@@ -860,17 +870,17 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
         .store_data_o(),
         .size_op_o(),
         
-        .data_mem_pkt_i(),
-        .data_mem_pkt_v_i(),
-        .data_mem_pkt_yumi_o(),
+        .data_mem_pkt_i(data_mem_pkt_li),
+        .data_mem_pkt_v_i(data_mem_pkt_v_li),
+        .data_mem_pkt_yumi_o(data_mem_pkt_yumi_lo),
 
-        .tag_mem_pkt_i(),
-        .tag_mem_pkt_v_i(),
-        .tag_mem_pkt_yumi_o(),
+        .tag_mem_pkt_i(tag_mem_pkt_li),
+        .tag_mem_pkt_v_i(tag_mem_pkt_v_li),
+        .tag_mem_pkt_yumi_o(tag_mem_pkt_yumi_lo),
 
-        .stat_mem_pkt_i(),
-        .stat_mem_pkt_v_i(),
-        .stat_mem_pkt_yumi_o()
+        .stat_mem_pkt_i(stat_mem_pkt_li),
+        .stat_mem_pkt_v_i(stat_mem_pkt_v_li),
+        .stat_mem_pkt_yumi_o(stat_mem_pkt_yumi_lo)
    );
 
     pico_reset pico_reset(
@@ -885,6 +895,10 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         // OpenPiton Bus
         // BP -> L1.5
+        .ready_o                            (),
+        .load_miss_i                        (),
+        .miss_addr_i                        (),
+        .lru_way_i                          (),
 
         // L1.5 -> BP
         .l15_transducer_ack                 (l15_transducer_ack),
@@ -913,7 +927,19 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
         .l15_transducer_data_0              (l15_transducer_data_0),
         .l15_transducer_data_1              (l15_transducer_data_1),
 
-        .transducer_l15_req_ack             (transducer_l15_req_ack)
+        .transducer_l15_req_ack             (transducer_l15_req_ack),
+
+        .data_mem_pkt_o                     (),
+        .data_mem_pkt_v_o                   (),
+        .data_mem_pkt_yumi_i                (),
+
+        .tag_mem_pkt_o                      (),
+        .tag_mem_pkt_v_o                    (),
+        .tag_mem_pkt_yumi_i                 (),
+
+        .stat_mem_pkt_o                     (),
+        .stat_mem_pkt_v_o                   (),
+        .stat_mem_pkt_yumi_i                ()
     );
 
 end
