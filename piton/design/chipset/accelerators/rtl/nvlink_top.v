@@ -41,29 +41,33 @@ module nvlink_top #(
     parameter APB_DATA_WIDTH   = 32,
     parameter SWAP_ENDIANESS = 0
 ) (
-    input                                   chipset_clk,
+    input 			  chipset_clk,
 
-    input                                   rst_n,
+    input 			  rst_n,
 
-    output                                  net_interrupt,
+    output 			  net_interrupt,
 
-    input                                   noc2_in_val,
-    input       [`NOC_DATA_WIDTH-1:0]       noc2_in_data,
-    output                                  noc2_in_rdy,
+    input [`NOC_CHIPID_WIDTH-1:0] chip_id,
+    input [`NOC_X_WIDTH -1:0] 	  x_id,
+    input [`NOC_Y_WIDTH -1:0]     y_id,
 
-    output                                  noc3_out_val,
-    output      [`NOC_DATA_WIDTH-1:0]       noc3_out_data,
-    input                                   noc3_out_rdy
-   
-//`ifdef PITON_FPGA_NVDLA
-    ,
-    output                                  noc2_out_val,
-    output      [`NOC_DATA_WIDTH-1:0]       noc2_out_data,
-    input                                   noc2_out_rdy,
+    input 			  noc2_in_val,
+    input [`NOC_DATA_WIDTH-1:0]   noc2_in_data,
+    output 			  noc2_in_rdy,
 
-    input                                   noc3_in_val,
-    input       [`NOC_DATA_WIDTH-1:0]       noc3_in_data,
-    output                                  noc3_in_rdy
+    output 			  noc3_out_val,
+    output [`NOC_DATA_WIDTH-1:0]  noc3_out_data,
+    input 			  noc3_out_rdy
+				  
+				  //`ifdef PITON_FPGA_NVDLA
+				  ,
+    output 			  noc2_out_val,
+    output [`NOC_DATA_WIDTH-1:0]  noc2_out_data,
+    input 			  noc2_out_rdy,
+
+    input 			  noc3_in_val,
+    input [`NOC_DATA_WIDTH-1:0]   noc3_in_data,
+    output 			  noc3_in_rdy
 //`endif
 
 
@@ -290,7 +294,11 @@ axilite_noc_bridge #(
     .NOCDECODER_DP_DATA_WIDTH (4)
 )  nvlink_noc_bridge (
     .clk                    (chipset_clk        ),
-    .rst                    (~rst_n             ),      
+    .rst                    (~rst_n             ),  
+
+    .chip_id                (chip_id),
+    .x_id                   (x_id),
+    .y_id                   (y_id),    
 
     .bridge_splitter_val    (noc2_out_val          ),
     .bridge_splitter_data   (noc2_out_data         ),

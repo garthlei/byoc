@@ -1115,10 +1115,19 @@ fake_uart fake_uart (
 `endif // endif PITONSYS_IOCTRL
 
 //Connects the nvlink to the chipset for NVDLA_small
+
+<%
+for i in range(1, len(devices)):
+    if devices[i]["name"] == "nvlink":
+        print '''
 nvlink_top  nvlink_top (
     //General signals
     .chipset_clk            (chipset_clk          ),
     .rst_n                  (chipset_rst_n        ),
+
+    .chip_id                    ( {1'b1, {(`NOC_CHIPID_WIDTH-1){1'b0}}} ),
+    .x_id                       ( `NOC_X_WIDTH'd%s                      ),
+    .y_id                       ( `NOC_Y_WIDTH'd0                       ),
 
     // Configuration Signals
     .noc2_in_val             (buf_nvlink_noc2_valid   ),
@@ -1139,7 +1148,9 @@ nvlink_top  nvlink_top (
     .noc3_in_rdy             (nvlink_buf_noc3_ready   )
 
 
-);
+);''' % (devices[i]["portnum"])
+%>
+
 
 
 /////////////////////////////
