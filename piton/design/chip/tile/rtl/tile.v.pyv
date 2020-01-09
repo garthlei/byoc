@@ -826,16 +826,16 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
     //////////////////////
     // BlackParrot Core //
     //////////////////////
-    logic l15_ready_lo;
-    logic load_miss_lo;
-    logic [39:0] miss_addr_lo;
-    logic [2:0] lru_way_lo;
-    logic [522:0] data_mem_pkt_li;
-    logic data_mem_pkt_v_li, data_mem_pkt_yumi_lo;
-    logic [41:0] tag_mem_pkt_li;
-    logic tag_mem_pkt_v_li, tag_mem_pkt_yumi_lo;
-    logic [10:0] stat_mem_pkt_li;
-    logic stat_mem_pkt_v_li, stat_mem_pkt_yumi_lo;
+    logic [1:0] l15_ready_lo;
+    logic [1:0] load_miss_lo;
+    logic [1:0][39:0] miss_addr_lo;
+    logic [1:0][2:0] lru_way_lo;
+    logic [1:0][522:0] data_mem_pkt_li;
+    logic [1:0] data_mem_pkt_v_li, data_mem_pkt_yumi_lo;
+    logic [1:0][41:0] tag_mem_pkt_li;
+    logic [1:0] tag_mem_pkt_v_li, tag_mem_pkt_yumi_lo;
+    logic [1:0][10:0] stat_mem_pkt_li;
+    logic [1:0] stat_mem_pkt_v_li, stat_mem_pkt_yumi_lo;
     bp_core_minimal proc (
         .clk_i                             (clk_gated),
         .reset_i                           (~rst_n_f),
@@ -895,10 +895,10 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         // OpenPiton Bus
         // BP -> L1.5
-        .ready_o                            (),
-        .load_miss_i                        (),
-        .miss_addr_i                        (),
-        .lru_way_i                          (),
+        .ready_o                            (l15_ready_lo[0]),
+        .load_miss_i                        (load_miss_lo[0]),
+        .miss_addr_i                        (miss_addr_lo[0]),
+        .lru_way_i                          (lru_way_lo[0]),
 
         // L1.5 -> BP
         .l15_transducer_ack                 (l15_transducer_ack),
@@ -929,17 +929,17 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         .transducer_l15_req_ack             (transducer_l15_req_ack),
 
-        .data_mem_pkt_o                     (),
-        .data_mem_pkt_v_o                   (),
-        .data_mem_pkt_yumi_i                (),
+        .data_mem_pkt_o                     (data_mem_pkt_li[0]),
+        .data_mem_pkt_v_o                   (data_mem_pkt_v_li[0]),
+        .data_mem_pkt_yumi_i                (data_mem_pkt_yumi_lo[0]),
 
-        .tag_mem_pkt_o                      (),
-        .tag_mem_pkt_v_o                    (),
-        .tag_mem_pkt_yumi_i                 (),
+        .tag_mem_pkt_o                      (tag_mem_pkt_li[0]),
+        .tag_mem_pkt_v_o                    (tag_mem_pkt_v_li[0]),
+        .tag_mem_pkt_yumi_i                 (tag_mem_pkt_yumi_lo[0]),
 
-        .stat_mem_pkt_o                     (),
-        .stat_mem_pkt_v_o                   (),
-        .stat_mem_pkt_yumi_i                ()
+        .stat_mem_pkt_o                     (stat_mem_pkt_li[0]),
+        .stat_mem_pkt_v_o                   (stat_mem_pkt_v_li[0]),
+        .stat_mem_pkt_yumi_i                (stat_mem_pkt_yumi_lo[0])
     );
 
 end
