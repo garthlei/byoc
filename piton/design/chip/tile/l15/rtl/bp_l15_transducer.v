@@ -19,10 +19,10 @@ module bp_l15_transducer
 
    // Miss type
    , input                                             load_miss_i
-   //, input                                             store_miss_i
+   , input                                             store_miss_i
    //, input                                             lr_miss_i
-   //, input                                             uncached_load_req_i
-   //, input                                             uncached_store_req_i
+   , input                                             uncached_load_req_i
+   , input                                             uncached_store_req_i
    // Miss info
    , input [39:0]                                      miss_addr_i
    , input [2:0]                                       lru_way_i
@@ -33,6 +33,7 @@ module bp_l15_transducer
 
    // OpenPiton side
    , output logic [4:0]                                transducer_l15_rqtype
+   , output logic                                      transducer_l15_nc
    , output logic [2:0]                                transducer_l15_size
    , output logic                                      transducer_l15_val
    , output logic [39:0]                               transducer_l15_address
@@ -48,7 +49,6 @@ module bp_l15_transducer
 
    // Unused OpenPiton side connections
    , input                                             l15_transducer_header_ack
-   , output                                            transducer_l15_nc
    , output [3:0]                                      transducer_l15_amo_op
    , output [0:0]                                      transducer_l15_threadid
    , output                                            transducer_l15_prefetch
@@ -90,28 +90,32 @@ module bp_l15_transducer
     ,e_ready
     ,e_load_send
     ,e_load
-    ,e_load_done
+    ,e_blockload
+    ,e_blockload_done
     ,e_store_send
     ,e_store
   } state_n, state_r;
 
-  wire miss_fifo_v_li = load_miss_i | store_i;
+  wire miss_fifo_v_li = load_miss_i | store_miss_i | store_i | uncached_store_req_i | uncached_load_req_i;
+  wire uncached_li = uncached_store_req_i | uncached_load_req_i;
+  wire store_li = store_i | uncached_store_req_i;
   logic miss_fifo_ready_lo;
   logic [39:0] miss_addr_lo;
   logic [2:0] lru_way_lo;
   logic store_lo;
+  logic uncached_lo;
   logic miss_v_lo, miss_yumi_li;
   bsg_one_fifo
-   #(.width_p(40+3+1))
+   #(.width_p(40+3+1+1))
    miss_fifo
     (.clk_i(clk_i)
      ,.reset_i(reset_i)
      
-     ,.data_i({store_i, lru_way_i, miss_addr_i})
+     ,.data_i({uncached_li, store_i, lru_way_i, miss_addr_i})
      ,.v_i(miss_fifo_v_li)
      ,.ready_o(miss_fifo_ready_lo)
 
-     ,.data_o({store_lo, lru_way_lo, miss_addr_lo})
+     ,.data_o({uncached_lo, store_lo, lru_way_lo, miss_addr_lo})
      ,.v_o(miss_v_lo)
      ,.yumi_i(miss_yumi_li)
      );
@@ -162,6 +166,7 @@ module bp_l15_transducer
       ready_o = 1'b0;
 
       transducer_l15_rqtype = '0;
+      transducer_l15_nc = '0;
       transducer_l15_size = '0;
       transducer_l15_address = '0;
       transducer_l15_data = '0;
@@ -201,15 +206,33 @@ module bp_l15_transducer
         e_load_send:
           begin
             transducer_l15_rqtype = `LOAD_RQ;
-            transducer_l15_size = `PCX_SZ_16B;
+            transducer_l15_nc = uncached_lo;
+            transducer_l15_size = uncached_lo
+                                  ? (size_op_i == 2'b00)
+                                    ? `PCX_SZ_1B
+                                    : (size_op_i == 2'b01)
+                                      ? `PCX_SZ_2B
+                                      : (size_op_i == 2'b10)
+                                        ? `PCX_SZ_4B
+                                        : `PCX_SZ_8B
+                                  : `PCX_SZ_16B;
             transducer_l15_address = miss_addr_lo + (miss_cnt << `BSG_SAFE_CLOG2(128));
             /* TODO: Increase associativity */
             transducer_l15_l1rplway = lru_way_lo[1:0];
             transducer_l15_val = 1'b1;
 
-            state_n = l15_transducer_ack ? e_load : e_load_send;
+            state_n = l15_transducer_ack ? e_blockload : e_load_send;
           end
         e_load:
+          begin
+            transducer_l15_req_ack = (l15_transducer_val & (l15_transducer_returntype == `LOAD_RET));
+
+            miss_yumi_li = l15_transducer_val;
+
+            state_n = l15_transducer_val ? e_ready : e_load;
+          end
+
+        e_blockload:
           begin
             transducer_l15_req_ack = (l15_transducer_val & (l15_transducer_returntype == `LOAD_RET));
 
@@ -220,11 +243,11 @@ module bp_l15_transducer
 
             state_n = transducer_l15_req_ack 
                       ? miss_almost_done
-                        ? e_load_done
+                        ? e_blockload_done
                         : e_load_send
-                      : e_load;
+                      : e_blockload;
           end
-        e_load_done:
+        e_blockload_done:
           begin
             data_mem_pkt_v_o = ~data_mem_pkt_yumi_r;
             tag_mem_pkt_v_o = ~tag_mem_pkt_yumi_r;
@@ -232,11 +255,12 @@ module bp_l15_transducer
 
             miss_yumi_li = data_mem_pkt_yumi_r & tag_mem_pkt_yumi_r & stat_mem_pkt_yumi_r;
 
-            state_n = miss_yumi_li ? e_ready : e_load_done;
+            state_n = miss_yumi_li ? e_ready : e_blockload_done;
           end
         e_store_send:
           begin
             transducer_l15_rqtype = `STORE_RQ;
+            transducer_l15_nc = uncached_lo;
             transducer_l15_size = (size_op_i == 2'b00)
                                   ? `PCX_SZ_1B
                                   : (size_op_i == 2'b01)
@@ -305,7 +329,6 @@ module bp_l15_transducer
   assign stat_mem_pkt_o = stat_mem_pkt;
 
   // Unused by BlackParrot
-  assign transducer_l15_nc = '0;
   assign transducer_l15_amo_op = '0;
   assign transducer_l15_threadid = '0;
   assign transducer_l15_prefetch = '0;
