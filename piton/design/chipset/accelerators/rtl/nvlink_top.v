@@ -154,6 +154,8 @@ wire blank_prot = 3'b0;
 wire blank_user = 6'b0;
 wire blank_qos = 4'b0;
 wire blank_last = 1'b0;
+wire blank_region = 4'b0;
+   
 
 //Test
    //assign prdata = 32'b1110;
@@ -219,7 +221,7 @@ axi2apb #(
             .APB_ADDR_WIDTH     ( APB_ADDR_WIDTH )
         ) axi2apb_nvlink (
             .ACLK       ( chipset_clk            ),
-            .ARESETn    ( ~rst_n                 ),
+            .ARESETn    ( rst_n                 ),
             .test_en_i  ( test_en_i              ), 
 
             .AWID_i     ( blank_id               ), 
@@ -281,12 +283,12 @@ axi2apb #(
             .PSLVERR    ( pslverr                )
         );
 
-`ifdef PITON_FPGA_NVDLA
+//`ifdef PITON_FPGA_NVDLA
 //APB -->NVDLA
 NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .dla_core_clk   (chipset_clk        ),
     .dla_csb_clk    (chipset_clk        ),      // TODO: rewrite to positive ?
-    .dla_reset_rstn (~rst_n             ),
+    .dla_reset_rstn ( rst_n             ),
     .direct_reset   (~rst_n             ),
 
     //apb signals
@@ -358,6 +360,6 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
 
 
 
-`endif  // PITON_FPGA_ETHERNETLITE
+//`endif  // PITON_FPGA_ETHERNETLITE
 
 endmodule

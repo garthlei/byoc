@@ -6,7 +6,6 @@ filesets:
     rtl:
         files:
             - nvlink_top.v
-            - axi2apb.v
         file_type: verilogSource-2001
 
 targets:

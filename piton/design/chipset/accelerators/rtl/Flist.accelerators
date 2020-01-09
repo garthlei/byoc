@@ -32,7 +32,12 @@
 //bram_map.v
 //ciop_iob.v
 nvlink_top.v
-axi2apb.v
+//axi2apb.v
+//slave_ar_buffer_i.v
+//slave_aw_buffer_i.v
+//slave_w_buffer_i.v
+//slave_r_buffer_i.v
+//slave_b_buffer_i.v
 // storage_addr_trans.v
 //uart_mux.v
 //uart_reader.v
