@@ -144,7 +144,8 @@ module bp_l15_transducer
      ,.v_o(load_cacheline_v_lo)
      ,.yumi_i(load_cacheline_yumi_li)
      );
-  assign load_cacheline_yumi_li = miss_yumi_li;
+  // Dequeue whenever useful
+  assign load_cacheline_yumi_li = load_cacheline_v_lo & miss_yumi_li;
 
   logic [`BSG_WIDTH(4)-1:0] miss_cnt;
   logic miss_up_li;
