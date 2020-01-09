@@ -27,8 +27,9 @@ module bp_l15_transducer
    , input [39:0]                                      miss_addr_i
    , input [2:0]                                       lru_way_i
    //, input [7:0]                                       dirty_i
-   //, input [63:0]                                      store_data_o
-   //, input [1:0]                                       size_op_o
+   , input                                             store_i
+   , input [63:0]                                      store_data_i
+   , input [1:0]                                       size_op_i
 
    // OpenPiton side
    , output logic [4:0]                                transducer_l15_rqtype
@@ -90,9 +91,7 @@ module bp_l15_transducer
     ,e_load_send
     ,e_load
     ,e_load_done
-    ,e_store_store
     ,e_store
-    ,e_store_done
   } state_n, state_r;
 
   wire miss_fifo_v_li = load_miss_i;
@@ -124,7 +123,7 @@ module bp_l15_transducer
      ,.els_p(4)
      ,.use_minimal_buffering_p(1)
      )
-   load_piso
+   load_sipo
     (.clk_i(clk_i)
      ,.reset_i(reset_i)
 
@@ -226,6 +225,12 @@ module bp_l15_transducer
             stat_mem_pkt_v_o = ~stat_mem_pkt_yumi_r;
 
             miss_yumi_li = data_mem_pkt_yumi_r & tag_mem_pkt_yumi_r & stat_mem_pkt_yumi_r;
+
+            state_n = miss_yumi_li ? e_ready : e_load_done;
+          end
+        e_store:
+          begin
+            // TODO: Enqueue on fifo and then send message
           end
         default: begin end
       endcase
