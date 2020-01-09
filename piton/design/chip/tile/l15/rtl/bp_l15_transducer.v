@@ -90,6 +90,7 @@ module bp_l15_transducer
     ,e_ready
     ,e_load_send
     ,e_load
+    ,e_load_done
     ,e_blockload
     ,e_blockload_done
     ,e_store_send
@@ -111,7 +112,7 @@ module bp_l15_transducer
     (.clk_i(clk_i)
      ,.reset_i(reset_i)
      
-     ,.data_i({uncached_li, store_i, lru_way_i, miss_addr_i})
+     ,.data_i({uncached_li, store_li, lru_way_i, miss_addr_i})
      ,.v_i(miss_fifo_v_li)
      ,.ready_o(miss_fifo_ready_lo)
 
@@ -123,11 +124,11 @@ module bp_l15_transducer
   logic [127:0] miss_data_li;
   logic miss_data_v_li, miss_data_ready_lo;
   logic [511:0] load_cacheline_lo;
+  logic [63:0] load_uncached_lo;
   logic load_cacheline_v_lo, load_cacheline_yumi_li;
-  bsg_serial_in_parallel_out_full
+  bsg_serial_in_parallel_out_dynamic
    #(.width_p(128)
-     ,.els_p(4)
-     ,.use_minimal_buffering_p(1)
+     ,.max_els_p(4)
      )
    load_sipo
     (.clk_i(clk_i)
@@ -135,7 +136,9 @@ module bp_l15_transducer
 
      ,.data_i(miss_data_li)
      ,.v_i(miss_data_v_li)
+     ,.len_i((uncached_lo ? 2'd0 : 2'd3))
      ,.ready_o(miss_data_ready_lo)
+     ,.len_ready_o()
 
      ,.data_o(load_cacheline_lo)
      ,.v_o(load_cacheline_v_lo)
@@ -221,7 +224,11 @@ module bp_l15_transducer
             transducer_l15_l1rplway = lru_way_lo[1:0];
             transducer_l15_val = 1'b1;
 
-            state_n = l15_transducer_ack ? e_blockload : e_load_send;
+            state_n = l15_transducer_ack
+                      ? uncached_lo
+                        ? e_load
+                        : e_blockload
+                      : e_load_send;
           end
         e_load:
           begin
@@ -229,9 +236,28 @@ module bp_l15_transducer
 
             miss_yumi_li = l15_transducer_val;
 
-            state_n = l15_transducer_val ? e_ready : e_load;
-          end
+            miss_data_li = {l15_transducer_data_1, l15_transducer_data_0};
+            miss_data_v_li = transducer_l15_req_ack;
 
+            state_n = l15_transducer_val ? e_load_done : e_load;
+          end
+        e_load_done:
+          begin
+            data_mem_pkt_v_o = ~data_mem_pkt_yumi_r;
+
+            // 128 bits 1-8 bytes
+            load_uncached_lo = (size_op_i == 2'b00)
+                                  ? (load_cacheline_lo >> (8*(miss_addr_lo[3+:4])))
+                                  : (size_op_i == 2'b01)
+                                    ? (load_cacheline_lo >> (8*(miss_addr_lo[3+:3])))
+                                    : (size_op_i == 2'b10)
+                                      ? (load_cacheline_lo >> (8*(miss_addr_lo[3+:2])))
+                                      : (load_cacheline_lo >> (8*(miss_addr_lo[3+:1])));
+
+            miss_yumi_li = data_mem_pkt_yumi_r;
+
+            state_n = miss_yumi_li ? e_ready : e_load_done;
+          end
         e_blockload:
           begin
             transducer_l15_req_ack = (l15_transducer_val & (l15_transducer_returntype == `LOAD_RET));
@@ -269,7 +295,14 @@ module bp_l15_transducer
                                       ? `PCX_SZ_4B
                                       : `PCX_SZ_8B;
             transducer_l15_address = miss_addr_lo;
-            transducer_l15_data = store_data_i;
+            /* TODO: This should replicate based on size */
+            transducer_l15_data = (size_op_i == 2'b00)
+                                  ? {8{store_data_i[0+:8]}}
+                                  : (size_op_i == 2'b01)
+                                    ? {4{store_data_i[0+:16]}}
+                                    : (size_op_i == 2'b10)
+                                      ? {2{store_data_i[0+:32]}}
+                                      : {1{store_data_i[0+:64]}};
             transducer_l15_l1rplway = lru_way_lo[1:0];
             transducer_l15_val = 1'b1;
 
@@ -309,7 +342,7 @@ module bp_l15_transducer
 
   assign data_mem_pkt.index = miss_addr_lo[byte_offset_width_lp+:index_width_lp];
   assign data_mem_pkt.way_id = lru_way_lo;
-  assign data_mem_pkt.data = load_cacheline_lo;
+  assign data_mem_pkt.data = uncached_lo ? load_uncached_lo : load_cacheline_lo;
   assign data_mem_pkt.opcode = e_dcache_lce_data_mem_write;
 
   assign tag_mem_pkt.index = miss_addr_lo[byte_offset_width_lp+:index_width_lp];
