@@ -32,6 +32,7 @@
 //bram_map.v
 //ciop_iob.v
 nvlink_top.v
+axilite_noc_bridge.v
 //axi2apb.v
 //slave_ar_buffer_i.v
 //slave_aw_buffer_i.v

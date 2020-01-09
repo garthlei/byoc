@@ -283,6 +283,53 @@ axi2apb #(
             .PSLVERR    ( pslverr                )
         );
 
+   //AXILITE --> CPU
+axilite_noc_bridge #(
+    .SLAVE_RESP_BYTEWIDTH   (4),
+    .SWAP_ENDIANESS         (SWAP_ENDIANESS),
+    .NOCDECODER_DP_DATA_WIDTH (4)
+)  nvlink_noc_bridge (
+    .clk                    (chipset_clk        ),
+    .rst                    (~rst_n             ),      
+
+    .bridge_splitter_val    (noc2_out_val          ),
+    .bridge_splitter_data   (noc2_out_data         ),
+    .splitter_bridge_rdy    (noc2_out_rdy          ), 
+
+    .splitter_bridge_val    (noc3_in_val           ),
+    .splitter_bridge_data   (noc3_in_data          ),
+    .bridge_splitter_rdy    (noc3_in_rdy           ),   
+
+
+    //axi lite signals
+    //write address channel
+    .axi_awaddr        (noc_axi_awaddr),
+    .axi_awvalid       (noc_axi_awvalid),
+    .axi_awready       (noc_axi_awready),
+
+    //write data channel
+    .axi_wdata         (noc_axi_wdata),
+    .axi_wstrb         (noc_axi_wstrb),
+    .axi_wvalid        (noc_axi_wvalid),
+    .axi_wready        (noc_axi_wready),
+
+    //read address channel
+    .axi_araddr        (noc_axi_araddr),
+    .axi_arvalid       (noc_axi_arvalid),
+    .axi_arready       (noc_axi_arready),
+
+    //read data channel
+    .axi_rdata         (noc_axi_rdata),
+    .axi_rresp         (noc_axi_rresp),
+    .axi_rvalid        (noc_axi_rvalid),
+    .axi_rready        (noc_axi_rready),
+
+    //write response channel
+    .axi_bresp         (noc_axi_bresp),
+    .axi_bvalid        (noc_axi_bvalid),
+    .axi_bready        (noc_axi_bready)
+);
+
 //`ifdef PITON_FPGA_NVDLA
 //APB -->NVDLA
 NV_NVDLA_wrapper  NV_NVDLA_nvlink (

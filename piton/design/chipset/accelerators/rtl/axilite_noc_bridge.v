@@ -40,10 +40,11 @@
 
 `include "define.tmp.h"
 `define C_M_AXI_LITE_DATA_WIDTH  `NOC_DATA_WIDTH
-`define C_M_AXI_LITE_ADDR_WIDTH  `NOC_DATA_WIDTH
+`define C_M_AXI_LITE_ADDR_WIDTH  32
 `define C_M_AXI_LITE_RESP_WIDTH  2
 // this is non-standard
 `define C_M_AXI_LITE_SIZE_WIDTH  3
+`define NOC2_FLIT_STATE_WIDTH    3
 
 module axilite_noc_bridge #(
     // SLAVE_RESP_BYTEWIDTH = 0 enables variable width accesses
@@ -63,9 +64,9 @@ module axilite_noc_bridge #(
     input wire 				       rst,
 
     // Memory Splitter <- AXI SPI
-    output  reg                                   bridge_splitter_val,
-    output  reg  [`NOC_DATA_WIDTH-1:0]            bridge_splitter_data,
-    input  wire                                   splitter_bridge_rdy,
+    output reg 				       bridge_splitter_val,
+    output reg [`NOC_DATA_WIDTH-1:0] 	       bridge_splitter_data,
+    input wire 				       splitter_bridge_rdy,
    
     // Memory Splitter -> AXI SPI
     input wire 				       splitter_bridge_val,
@@ -74,13 +75,13 @@ module axilite_noc_bridge #(
 
     // AXI Write Address Channel Signals
     input reg [`C_M_AXI_LITE_ADDR_WIDTH-1:0]   axi_awaddr,
-    input reg 				       axi_awvalid,
+    input wire 				       axi_awvalid,
     output wire 			       axi_awready,
 
     // AXI Write Data Channel Signals
     input wire [`C_M_AXI_LITE_DATA_WIDTH-1:0]  axi_wdata,
     input reg [`C_M_AXI_LITE_DATA_WIDTH/8-1:0] axi_wstrb,
-    input reg 				       axi_wvalid,
+    input wire 				       axi_wvalid,
     output wire 			       axi_wready,
 
     // AXI Read Address Channel Signals
@@ -95,8 +96,8 @@ module axilite_noc_bridge #(
     input reg 				       axi_rready,
 
     // AXI Write Response Channel Signals
-    output wire [`C_M_AXI_LITE_RESP_WIDTH-1:0] axi_bresp,
-    output wire 			       axi_bvalid,
+    output reg [`C_M_AXI_LITE_RESP_WIDTH-1:0]  axi_bresp,
+    output reg				       axi_bvalid,
     input reg 				       axi_bready
 );
 
@@ -143,10 +144,10 @@ localparam STORE_ACK = 1'd1;
 
 
  //Helper signals for reading requests from AXI
-   wire 		      axi_store_request;
-   wire                       axi_load_request;
+   wire			     axi_store_request;
+   wire                      axi_load_request;
    
-   reg [C_M_AXI_LITE_ADDR_WIDTH-1:0] address;
+   reg [`C_M_AXI_LITE_ADDR_WIDTH-1:0] address;
    reg [`NOC_X_WIDTH-1:0]    dest_xpos;
    reg [`NOC_Y_WIDTH-1:0]    dest_ypos;
    reg [`NOC_CHIPID_WIDTH-1:0] dest_chipid;
@@ -167,8 +168,8 @@ localparam STORE_ACK = 1'd1;
 
    reg [`NOC_DATA_WIDTH-1:0] noc2encoder_req_data_f;
 
-   wire 		     noc2encoder_req_val;
-   wire [`NOC_DATA_WIDTH-1:0] noc2encoder_req_data;
+   reg 			     noc2encoder_req_val;
+   reg [`NOC_DATA_WIDTH-1:0] noc2encoder_req_data;
    
    reg [`NOC_DATA_WIDTH-1:0] flit;
    reg [`NOC2_FLIT_STATE_WIDTH-1:0] flit_state;
@@ -224,159 +225,159 @@ localparam STORE_ACK = 1'd1;
 // Read Requests From AXI
 //==============================================================================
 
-always @ *
-begin  
-   axi_store_request = axi_awvalid & axi_wvalid;
+//always @ *
+//begin  
+ //  assign axi_store_request = axi_awvalid & axi_wvalid;
 
-   axi_load_request = axi_arvalid;
+ //  assign axi_load_request = axi_arvalid;
 
     // What type of message is arriving currently?
-    axi_io_msg_type_mux_out =
-        (!axi_store_request & !axi_load_request) ? MSG_TYPE_INVAL :
-        (axi_store_request) ? MSG_TYPE_STORE  :
-         (axi_load_request ) ? MSG_TYPE_LOAD :
-                                                                            MSG_TYPE_INVAL );
+  //  assign axi_io_msg_type_mux_out =
+  //      (!axi_store_request & !axi_load_request) ? MSG_TYPE_INVAL :
+  //      (axi_store_request) ? MSG_TYPE_STORE  :
+  //       (axi_load_request ) ? MSG_TYPE_LOAD :
+  //                                                                          MSG_TYPE_INVAL;
 
-    dest_xpos = 0;
-    dest_ypos = 0;
-    dest_chipid = 0;
-    dest_fbits = `NOC_FBITS_MEM;
+ //   dest_xpos = 0;
+ //   dest_ypos = 0;
+ //   dest_chipid = 0;
+ //   dest_fbits = `NOC_FBITS_MEM;
 
-    src_xpos = 0;
-    src_ypos = 0;
-    src_chipid = 0;
-    src_fbits = `NOC_FBITS_DRE;
+ //   src_xpos = 0;
+ //   src_ypos = 0;
+ //   src_chipid = 0;
+ //   src_fbits = `NOC_FBITS_L1;
 
 
-    msg_mshrid = 0;
+ //   msg_mshrid = 0;
 
-    msg_options_1 = 0;
-    msg_options_2 = 0;
-    msg_options_3 = 0;
-    msg_options_4 = 0;
+ //   msg_options_1 = 0;
+ //   msg_options_2 = 0;
+ //   msg_options_3 = 0;
+ //   msg_options_4 = 0;
 
-   case (axi_io_msg_type_mux_out)
-     MSG_TYPE_STORE:
-       begin
-	  address = axi_awaddr;
-	  msg_type = `MSG_TYPE_STORE_MEM;
-          msg_length = 3; // 2 extra req headers + 1 data (64b)
-	  sending = axi_store_request;
-	  noc2encoder_req_val = axi_store_request;
-	  noc2encoder_req_data = axi_wdata;
+ //  case (axi_io_msg_type_mux_out)
+ //    MSG_TYPE_STORE:
+ //      begin
+//	  address = axi_awaddr;
+//	  msg_type = `MSG_TYPE_STORE_MEM;
+//          msg_length = 3; // 2 extra req headers + 1 data (64b)
+//	  sending = axi_store_request;
+//	  noc2encoder_req_val = axi_store_request;
+//	  noc2encoder_req_data = axi_wdata;
 	  
-       end
-     MSG_TYPE_LOAD:
-       begin
-	 address = axi_araddr;
-	 msg_type = `MSG_TYPE_LOAD_MEM;
-         msg_length = 2; // 2 extra req headers
-	 sending = axi_load_request;
-	 noc2encoder_req_val = axi_load_request;
-	 noc2encoder_req_data = 0;
+//       end
+//     MSG_TYPE_LOAD:
+//       begin
+//	 address = axi_araddr;
+//	 msg_type = `MSG_TYPE_LOAD_MEM;
+//         msg_length = 2; // 2 extra req headers
+//	 sending = axi_load_request;
+//	 noc2encoder_req_val = axi_load_request;
+//	 noc2encoder_req_data = 0;
 	  
-       end
-     default:
-       begin
-	  address = 0;
-	  msg_length = 0;
-	  msg_type = 0;
-	  sending = 0;
-	  noc2encoder_req_val = 0;
-	  noc2encoder_req_data = 0;
-       end
-   endcase // case (axi_io_msg_type_mux_out)
+ //      end
+ //    default:
+ //      begin
+//	  address = 0;
+//	  msg_length = 0;
+//	  msg_type = 0;
+//	  sending = 0;
+//	  noc2encoder_req_val = 0;
+//	  noc2encoder_req_data = 0;
+  //     end
+ //  endcase // case (axi_io_msg_type_mux_out)
 
-   bridge_splitter_val = sending;
+ //  bridge_splitter_val = sending;
    
-end  
+//end  
  
 
 //==============================================================================
 // Forward Requests to NOC
 //==============================================================================
 
-always @ (posedge clk)
-begin
-    if (rst)
-    begin
-        noc2encoder_req_data_f <= 0;
-    end
-    else if (noc2encoder_req_val)
-    begin
-        noc2encoder_req_data_f <= noc2encoder_req_data;
-    end
-end
+//always @ (posedge clk)
+//begin
+//    if (rst)
+//    begin
+//        noc2encoder_req_data_f <= 0;
+//    end
+//    else if (noc2encoder_req_val)
+//    begin
+//        noc2encoder_req_data_f <= noc2encoder_req_data;
+//    end
+//end
 
-always @ (posedge clk)
-begin
-    if (rst)
-    begin
-        flit_state <= 0;
-    end
-    else
-    begin
-        flit_state <= flit_state_next;
-    end
-end
+//always @ (posedge clk)
+//begin
+//    if (rst)
+//    begin
+//        flit_state <= 0;
+//    end
+//    else
+//    begin
+//        flit_state <= flit_state_next;
+//    end
+//end
 
-always @ *
-begin
+//always @ *
+//begin
 
     // flit filling logic
-    flit[`NOC_DATA_WIDTH-1:0] = 0; // so that the flit is not a latch
-    if (flit_state == `NOC2_REQ_HEADER_1)
-    begin
-        flit[`MSG_DST_CHIPID] = dest_chipid;
-        flit[`MSG_DST_X] = dest_xpos;
-        flit[`MSG_DST_Y] = dest_ypos;
-        flit[`MSG_DST_FBITS] = dest_fbits;
-        flit[`MSG_LENGTH] = msg_length;
-        flit[`MSG_TYPE] = msg_type;
-        flit[`MSG_MSHRID] = msg_mshrid;
-        flit[`MSG_OPTIONS_1] = msg_options_1;
-    end
-    else if (flit_state == `NOC2_REQ_HEADER_2)
-    begin
-        flit[`MSG_ADDR_] = address;
-        flit[`MSG_OPTIONS_2_] = msg_options_2;
-    end
-    else if (flit_state == `NOC2_REQ_HEADER_3)
-    begin
-        flit[`MSG_SRC_CHIPID_] = src_chipid;
-        flit[`MSG_SRC_X_] = src_xpos;
-        flit[`MSG_SRC_Y_] = src_ypos;
-        flit[`MSG_SRC_FBITS_] = src_fbits;
-        flit[`MSG_OPTIONS_3_] = msg_options_3;
-    end
-    else if (flit_state == `NOC2_REQ_STORE_DATA)
-    begin
-        flit[`NOC_DATA_WIDTH-1:0] = noc2encoder_req_data_f;
-    end
-    bridge_splitter_data = flit;
+//    flit[`NOC_DATA_WIDTH-1:0] = 0; // so that the flit is not a latch
+//    if (flit_state == MSG_STATE_HEADER_0)
+//    begin
+//        flit[`MSG_DST_CHIPID] = dest_chipid;
+//        flit[`MSG_DST_X] = dest_xpos;
+//        flit[`MSG_DST_Y] = dest_ypos;
+//        flit[`MSG_DST_FBITS] = dest_fbits;
+//        flit[`MSG_LENGTH] = msg_length;
+//        flit[`MSG_TYPE] = msg_type;
+//        flit[`MSG_MSHRID] = msg_mshrid;
+//        flit[`MSG_OPTIONS_1] = msg_options_1;
+//    end
+//    else if (flit_state == MSG_STATE_HEADER_1)
+//    begin
+//        flit[`MSG_ADDR_] = address;
+//        flit[`MSG_OPTIONS_2_] = msg_options_2;
+//    end
+//    else if (flit_state == MSG_STATE_HEADER_2)
+//    begin
+//        flit[`MSG_SRC_CHIPID_] = src_chipid;
+//        flit[`MSG_SRC_X_] = src_xpos;
+//        flit[`MSG_SRC_Y_] = src_ypos;
+//        flit[`MSG_SRC_FBITS_] = src_fbits;
+//        flit[`MSG_OPTIONS_3_] = msg_options_3;
+//    end
+//    else if (flit_state == MSG_STATE_DATA)
+//    begin
+//        flit[`NOC_DATA_WIDTH-1:0] = noc2encoder_req_data_f;
+//    end
+//    bridge_splitter_data = flit;
 
-end
+//end
 
-always @ *
-begin
+//always @ *
+//begin
     // next flit state logic
-    flit_state_next = flit_state;
-    if (sending)
-    begin
-        if (splitter_bridge_rdy)
-        begin
-            if (flit_state != msg_length)
-                flit_state_next = flit_state + 1;
-            else
-                flit_state_next = `NOC2_REQ_HEADER_1;
-        end
-    end
-    else
-    begin
-        flit_state_next = `NOC2_REQ_HEADER_1;
-    end
+//    flit_state_next = flit_state;
+//    if (sending)
+//    begin
+//        if (splitter_bridge_rdy)
+//        begin
+//            if (flit_state != msg_length)
+//                flit_state_next = flit_state + 1;
+//            else
+//                flit_state_next = MSG_STATE_HEADER_0;
+//        end
+//    end
+//    else
+//    begin
+//        flit_state_next = MSG_STATE_HEADER_0;
+//    end
 
-end 
+//end 
 
 //==============================================================================
 // Receive NOC Response and Create NVDLA Response
@@ -384,139 +385,139 @@ end
 
 
 // What type of message is arriving currently?
-    assign splitter_io_msg_type_mux_out =
-        (!splitter_bridge_val) ? MSG_TYPE_INVAL :
-        (splitter_bridge_data[`MSG_TYPE] == `MSG_TYPE_STORE_MEM_ACK ) ? MSG_TYPE_STORE  :
-         (splitter_bridge_data[`MSG_TYPE] == `MSG_TYPE_LOAD_MEM_ACK   ) ? MSG_TYPE_LOAD :
-                                                                            MSG_TYPE_INVAL;
+//    assign splitter_io_msg_type_mux_out =
+//        (!splitter_bridge_val) ? MSG_TYPE_INVAL :
+//        (splitter_bridge_data[`MSG_TYPE] == `MSG_TYPE_STORE_MEM_ACK ) ? MSG_TYPE_STORE  :
+//         (splitter_bridge_data[`MSG_TYPE] == `MSG_TYPE_LOAD_MEM_ACK   ) ? MSG_TYPE_LOAD :
+//                                                                            MSG_TYPE_INVAL;
 
    // What type of message will we be receiving?
-    assign splitter_io_msg_type_next =
-        (splitter_io_msg_state_next == MSG_STATE_INVAL   ) ? MSG_TYPE_INVAL               :
-        (splitter_io_msg_state_next == MSG_STATE_HEADER_0) ? splitter_io_msg_type_mux_out :
-                                                             splitter_io_msg_type_f       ;
+//    assign splitter_io_msg_type_next =
+//        (splitter_io_msg_state_next == MSG_STATE_INVAL   ) ? MSG_TYPE_INVAL               :
+//        (splitter_io_msg_state_next == MSG_STATE_HEADER_0) ? splitter_io_msg_type_mux_out :
+//                                                             splitter_io_msg_type_f       ;
 
     // Is the current message a load or a store?
-    assign splitter_io_msg_is_load       = (splitter_io_msg_type_f    == MSG_TYPE_LOAD );
-    assign splitter_io_msg_is_store      = (splitter_io_msg_type_f    == MSG_TYPE_STORE);
+//    assign splitter_io_msg_is_load       = (splitter_io_msg_type_f    == MSG_TYPE_LOAD );
+//    assign splitter_io_msg_is_store      = (splitter_io_msg_type_f    == MSG_TYPE_STORE);
 
     // Is the incoming message a load or a store?
-    assign splitter_io_msg_is_load_next  = (splitter_io_msg_type_next == MSG_TYPE_LOAD );
-    assign splitter_io_msg_is_store_next = (splitter_io_msg_type_next == MSG_TYPE_STORE);
+//    assign splitter_io_msg_is_load_next  = (splitter_io_msg_type_next == MSG_TYPE_LOAD );
+//    assign splitter_io_msg_is_store_next = (splitter_io_msg_type_next == MSG_TYPE_STORE);
 
     // Should we read data from splitter_bridge_data?
-    assign splitter_io_go = splitter_bridge_val && bridge_splitter_rdy;
+//    assign splitter_io_go = splitter_bridge_val && bridge_splitter_rdy;
 
    // Should we read a load request (store request)?
-    assign splitter_io_load_go  = splitter_io_msg_is_load_next  && splitter_io_go && (r_req_buf_status_f == BUF_STATUS_INCOMP);
-    assign splitter_io_store_go = splitter_io_msg_is_store_next && splitter_io_go && (b_resp_buf_status   == BUF_STATUS_INCOMP);
+//    assign splitter_io_load_go  = splitter_io_msg_is_load_next  && splitter_io_go && (r_resp_buf_status == BUF_STATUS_INCOMP);
+//    assign splitter_io_store_go = splitter_io_msg_is_store_next && splitter_io_go && (b_resp_buf_status_f   == BUF_STATUS_INCOMP);
 
    // Next-State logic for incoming message parser
-    assign splitter_io_msg_state_next =
-        (splitter_io_msg_state_f == MSG_STATE_INVAL   ) ? MSG_STATE_HEADER_0  :
-        (splitter_io_msg_state_f == MSG_STATE_HEADER_0) ? MSG_STATE_HEADER_1  :
-        (splitter_io_msg_state_f == MSG_STATE_HEADER_1) ? MSG_STATE_HEADER_2  :
-        (splitter_io_msg_counter_f == 0               ) ? MSG_STATE_HEADER_0  :
-        (splitter_io_msg_state_f == MSG_STATE_HEADER_2) ? MSG_STATE_DATA      :
-        (splitter_io_msg_state_f == MSG_STATE_DATA    ) ? MSG_STATE_DATA      :
-                                                          MSG_STATE_INVAL     ;
+//    assign splitter_io_msg_state_next =
+//        (splitter_io_msg_state_f == MSG_STATE_INVAL   ) ? MSG_STATE_HEADER_0  :
+//        (splitter_io_msg_state_f == MSG_STATE_HEADER_0) ? MSG_STATE_HEADER_1  :
+//        (splitter_io_msg_state_f == MSG_STATE_HEADER_1) ? MSG_STATE_HEADER_2  :
+//        (splitter_io_msg_counter_f == 0               ) ? MSG_STATE_HEADER_0  :
+//        (splitter_io_msg_state_f == MSG_STATE_HEADER_2) ? MSG_STATE_DATA      :
+//        (splitter_io_msg_state_f == MSG_STATE_DATA    ) ? MSG_STATE_DATA      :
+//                                                          MSG_STATE_INVAL     ;
 
 
    // Next-value logic for message counter
-    assign splitter_io_msg_counter_next =
-        (splitter_io_msg_state_next == MSG_STATE_HEADER_0) ? splitter_bridge_data[`MSG_LENGTH] :
-                                                             splitter_io_msg_counter_f - 1'b1  ;
+//    assign splitter_io_msg_counter_next =
+//        (splitter_io_msg_state_next == MSG_STATE_HEADER_0) ? splitter_bridge_data[`MSG_LENGTH] :
+//                                                             splitter_io_msg_counter_f - 1'b1  ;
 
    //--------------------------------------------------------------------------
     // Sequential Block for Splitter FSM State
     //--------------------------------------------------------------------------
-    always @(posedge clk) begin
-        if (rst) begin
-            splitter_io_msg_state_f   <= MSG_STATE_INVAL;
-            splitter_io_msg_type_f    <= MSG_TYPE_INVAL;
-            splitter_io_msg_counter_f <= {`MSG_LENGTH_WIDTH{1'b0}};
-        end
-        else begin
-            splitter_io_msg_state_f   <= splitter_io_go ? splitter_io_msg_state_next
-                                                        : splitter_io_msg_state_f;
-            splitter_io_msg_type_f    <= splitter_io_go ? splitter_io_msg_type_next
-                                                        : splitter_io_msg_type_f;
-            splitter_io_msg_counter_f <= splitter_io_go ? splitter_io_msg_counter_next
-                                                        : splitter_io_msg_counter_f;
-        end
-    end
+//    always @(posedge clk) begin
+//        if (rst) begin
+//            splitter_io_msg_state_f   <= MSG_STATE_INVAL;
+//            splitter_io_msg_type_f    <= MSG_TYPE_INVAL;
+//            splitter_io_msg_counter_f <= {`MSG_LENGTH_WIDTH{1'b0}};
+//        end
+//        else begin
+//            splitter_io_msg_state_f   <= splitter_io_go ? splitter_io_msg_state_next
+//                                                        : splitter_io_msg_state_f;
+//            splitter_io_msg_type_f    <= splitter_io_go ? splitter_io_msg_type_next
+//                                                        : splitter_io_msg_type_f;
+//            splitter_io_msg_counter_f <= splitter_io_go ? splitter_io_msg_counter_next
+//                                                        : splitter_io_msg_counter_f;
+//        end
+//    end
 
     //--------------------------------------------------------------------------
     // Read headers and data for a store acknowledge (goes to b axi) 
     //--------------------------------------------------------------------------
-    always @(posedge clk) begin
-        if (rst) begin
-            b_resp_buf_header0_f <= {`NOC_DATA_WIDTH{1'b0}};
-            b_resp_buf_header1_f <= {`NOC_DATA_WIDTH{1'b0}};
-            b_resp_buf_header2_f <= {`NOC_DATA_WIDTH{1'b0}};
-            b_resp_buf_status_f  <= BUF_STATUS_INCOMP;
-        end
-        else begin
-            b_resp_buf_header0_f <= (splitter_io_store_go &
-                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_0)) ? splitter_bridge_data :
-                                                                                          b_resp_buf_header0_f  ;
-            b_resp_buf_header1_f <= (splitter_io_store_go &
-                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_1)) ? splitter_bridge_data :
-                                                                                          b_resp_buf_header1_f  ;
-            b_resp_buf_header2_f <= (splitter_io_store_go &
-                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_2)) ? splitter_bridge_data :
-                                                                                          b_resp_buf_header2_f  ;
-            b_resp_buf_status_f  <= (splitter_io_store_go &
-                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_2)) ? BUF_STATUS_COMP      :
-                                    (axi_b_go)                                        ? BUF_STATUS_INCOMP    :
-                                                                                         b_resp_buf_status_f   ;
-        end
-    end
+//    always @(posedge clk) begin
+//        if (rst) begin
+//            b_resp_buf_header0_f <= {`NOC_DATA_WIDTH{1'b0}};
+//            b_resp_buf_header1_f <= {`NOC_DATA_WIDTH{1'b0}};
+//            b_resp_buf_header2_f <= {`NOC_DATA_WIDTH{1'b0}};
+//            b_resp_buf_status_f  <= BUF_STATUS_INCOMP;
+//        end
+//        else begin
+//            b_resp_buf_header0_f <= (splitter_io_store_go &
+//                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_0)) ? splitter_bridge_data :
+//                                                                                          b_resp_buf_header0_f  ;
+//            b_resp_buf_header1_f <= (splitter_io_store_go &
+//                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_1)) ? splitter_bridge_data :
+//                                                                                          b_resp_buf_header1_f  ;
+//            b_resp_buf_header2_f <= (splitter_io_store_go &
+//                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_2)) ? splitter_bridge_data :
+//                                                                                          b_resp_buf_header2_f  ;
+//            b_resp_buf_status_f  <= (splitter_io_store_go &
+//                                    (splitter_io_msg_state_next == MSG_STATE_HEADER_2)) ? BUF_STATUS_COMP      :
+//                                    (axi_b_go)                                        ? BUF_STATUS_INCOMP    :
+//                                                                                         b_resp_buf_status_f   ;
+//        end
+//    end
 
     //--------------------------------------------------------------------------
     // Read headers and data for a load acknowledge (read data to axi)
     //--------------------------------------------------------------------------
-    wire    r_status_update;
-    assign  r_status_update =   splitter_io_load_go &
-                                (splitter_io_msg_state_next == MSG_STATE_DATA) &
-                                (splitter_io_msg_counter_f == `MSG_LENGTH_WIDTH'd1);
+//    wire    r_status_update;
+//    assign  r_status_update =   splitter_io_load_go &
+//                                (splitter_io_msg_state_next == MSG_STATE_DATA) &
+//                                (splitter_io_msg_counter_f == `MSG_LENGTH_WIDTH'd1);
 
-    always @(posedge clk) begin
-        if (rst) begin
-            r_resp_buf_header0_f     <= {`NOC_DATA_WIDTH{1'b0}};
-            r_resp_buf_header1_f     <= {`NOC_DATA_WIDTH{1'b0}};
-            r_resp_buf_header2_f     <= {`NOC_DATA_WIDTH{1'b0}};
-            r_resp_buf_data0_f       <= {`NOC_DATA_WIDTH{1'b0}};
+//    always @(posedge clk) begin
+//        if (rst) begin
+//            r_resp_buf_header0_f     <= {`NOC_DATA_WIDTH{1'b0}};
+//            r_resp_buf_header1_f     <= {`NOC_DATA_WIDTH{1'b0}};
+//            r_resp_buf_header2_f     <= {`NOC_DATA_WIDTH{1'b0}};
+//            r_resp_buf_data0_f       <= {`NOC_DATA_WIDTH{1'b0}};
             //r_addr_resp_buf_status_f <= BUF_STATUS_INCOMP;
-            r_data_req_buf_status_f <= BUF_STATUS_INCOMP;
-        end
-        else begin
-            r_resp_buf_header0_f     <= (splitter_io_load_go &
-                                        (splitter_io_msg_state_next == MSG_STATE_HEADER_0)) ? splitter_bridge_data    :
-                                                                                              r_resp_buf_header0_f     ;
-            r_resp_buf_header1_f     <= (splitter_io_load_go &
-                                        (splitter_io_msg_state_next == MSG_STATE_HEADER_1)) ? splitter_bridge_data    :
-                                                                                              r_resp_buf_header1_f     ;
-            r_resp_buf_header2_f     <= (splitter_io_load_go &
-                                        (splitter_io_msg_state_next == MSG_STATE_HEADER_2)) ? splitter_bridge_data    :
-                                                                                              r_resp_buf_header2_f     ;
-            r_resp_buf_data0_f       <= (splitter_io_load_go &
-                                        (splitter_io_msg_state_next == MSG_STATE_DATA))     ? splitter_bridge_data    :
-                                                                                              r_resp_buf_data0_f       ;
+//            r_data_resp_buf_status_f <= BUF_STATUS_INCOMP;
+//        end
+//        else begin
+//            r_resp_buf_header0_f     <= (splitter_io_load_go &
+//                                        (splitter_io_msg_state_next == MSG_STATE_HEADER_0)) ? splitter_bridge_data    :
+//                                                                                              r_resp_buf_header0_f     ;
+//            r_resp_buf_header1_f     <= (splitter_io_load_go &
+//                                        (splitter_io_msg_state_next == MSG_STATE_HEADER_1)) ? splitter_bridge_data    :
+//                                                                                              r_resp_buf_header1_f     ;
+//            r_resp_buf_header2_f     <= (splitter_io_load_go &
+//                                        (splitter_io_msg_state_next == MSG_STATE_HEADER_2)) ? splitter_bridge_data    :
+//                                                                                              r_resp_buf_header2_f     ;
+//            r_resp_buf_data0_f       <= (splitter_io_load_go &
+//                                        (splitter_io_msg_state_next == MSG_STATE_DATA))     ? splitter_bridge_data    :
+//                                                                                              r_resp_buf_data0_f       ;
            // r_addr_resp_buf_status_f <= w_status_update                                      ? BUF_STATUS_COMP         :
            //                            m_axi_aw_go                                          ? BUF_STATUS_INCOMP       :
            //                                                                                   w_addr_req_buf_status_f ;
-            r_data_resp_buf_status_f <= r_status_update                                      ? BUF_STATUS_COMP         :
-                                        axi_r_go                                             ? BUF_STATUS_INCOMP       :
-                                                                                              r_data_resp_buf_status_f ;
-        end
-    end
+//            r_data_resp_buf_status_f <= r_status_update                                      ? BUF_STATUS_COMP         :
+//                                        axi_r_go                                             ? BUF_STATUS_INCOMP       :
+//                                                                                              r_data_resp_buf_status_f ;
+//        end
+//    end
 
     // Calculate Store Request Status
-    assign r_resp_buf_status =
+//    assign r_resp_buf_status =
         //((w_addr_req_buf_status_f == BUF_STATUS_INCOMP) &&
-         (r_data_resp_buf_status_f == BUF_STATUS_INCOMP)     ? BUF_STATUS_INCOMP :
-                                                               BUF_STATUS_COMP   ;
+//         (r_data_resp_buf_status_f == BUF_STATUS_INCOMP)     ? BUF_STATUS_INCOMP :
+//                                                               BUF_STATUS_COMP   ;
 
    
 //always @ (posedge clk)
@@ -546,53 +547,53 @@ end
 
    
 //==============================================================================
-// Send Piton Response Back to NOCs
+// Send Piton Response Back to AXILITE
 //==============================================================================
 
 
-   wire [`NOC_DATA_WIDTH-1:0]          paddings;
-   reg  [`C_M_AXI_LITE_DATA_WIDTH-1:0] axi_rdata_tmp;
+//   wire [`NOC_DATA_WIDTH-1:0]          paddings;
+//   reg  [`C_M_AXI_LITE_DATA_WIDTH-1:0] axi_rdata_tmp;
 
-    assign paddings = 0;
+//    assign paddings = 0;
 
 
     // Calculate Valid, Resp, Data signals
-    always @ (*) begin
+//    always @ (*) begin
         // Write Response Channel
-       axi_bvalid = (b_resp_buf_status_f == BUF_STATUS_COMP);
-// && (w_addr_resp_buf_status_f == BUF_STATUS_INCOMP);
-        axi_bresp = {paddings[`NOC_DATA_WIDTH-1:`PHY_ADDR_WIDTH], b_resp_buf_header1_f[`MSG_ADDR_HI_:`MSG_ADDR_HI_-39]};
+//       axi_bvalid = (b_resp_buf_status_f == BUF_STATUS_COMP);
+                // && (w_addr_resp_buf_status_f == BUF_STATUS_INCOMP);
+//        axi_bresp = {paddings[`NOC_DATA_WIDTH-1:`PHY_ADDR_WIDTH], b_resp_buf_header1_f[`MSG_ADDR_HI_:`MSG_ADDR_HI_-39]};
 
         // Read Response Channel
-       axi_rvalid = (r_resp_buf_status_f == BUF_STATUS_COMP);
-// && (r_resp_buf_status_f == BUF_STATUS_INCOMP);
-       axi_rresp = {paddings[`NOC_DATA_WIDTH-1:`PHY_ADDR_WIDTH], r_resp_buf_header1_f[`MSG_ADDR_HI_:`MSG_ADDR_HI_-39]};
-       axi_rdata_tmp = r_resp_buf_data0_f[`C_M_AXI_LITE_DATA_WIDTH-1:0];
-    end
+//       axi_rvalid = (r_resp_buf_status == BUF_STATUS_COMP);
+               // && (r_resp_buf_status_f == BUF_STATUS_INCOMP);
+//       axi_rresp = {paddings[`NOC_DATA_WIDTH-1:`PHY_ADDR_WIDTH], r_resp_buf_header1_f[`MSG_ADDR_HI_:`MSG_ADDR_HI_-39]};
+//       axi_rdata_tmp = r_resp_buf_data0_f[`C_M_AXI_LITE_DATA_WIDTH-1:0];
+//    end
 
-    generate
-        if (SWAP_ENDIANESS) begin
-            initial begin : p_endianess_check
-              if (!(`C_M_AXI_LITE_DATA_WIDTH == 64 && `NOC_DATA_WIDTH == 64))
-                  $fatal(1,"swapped endianess only works for 64bit NOC and AXI bus");
-            end
+//    generate
+//        if (SWAP_ENDIANESS) begin
+//            initial begin : p_endianess_check
+//              if (!(`C_M_AXI_LITE_DATA_WIDTH == 64 && `NOC_DATA_WIDTH == 64))
+//                  $fatal(1,"swapped endianess only works for 64bit NOC and AXI bus");
+//            end
             // this only works for 64bits
             // the byte enables are already generated correctly and need not be swapped
-            assign axi_rdata[56 +: 8] = axi_rdata_tmp[ 0 +: 8];
-            assign axi_rdata[48 +: 8] = axi_rdata_tmp[ 8 +: 8];
-            assign axi_rdata[40 +: 8] = axi_rdata_tmp[16 +: 8];
-            assign axi_rdata[32 +: 8] = axi_rdata_tmp[24 +: 8];
-            assign axi_rdata[24 +: 8] = axi_rdata_tmp[32 +: 8];
-            assign axi_rdata[16 +: 8] = axi_rdata_tmp[40 +: 8];
-            assign axi_rdata[ 8 +: 8] = axi_rdata_tmp[48 +: 8];
-            assign axi_rdata[ 0 +: 8] = axi_rdata_tmp[56 +: 8];
-        end else begin
-            assign axi_rdata = axi_rdata_tmp;
-        end
-    endgenerate
+//            assign axi_rdata[56 +: 8] = axi_rdata_tmp[ 0 +: 8];
+//            assign axi_rdata[48 +: 8] = axi_rdata_tmp[ 8 +: 8];
+//            assign axi_rdata[40 +: 8] = axi_rdata_tmp[16 +: 8];
+//            assign axi_rdata[32 +: 8] = axi_rdata_tmp[24 +: 8];
+//            assign axi_rdata[24 +: 8] = axi_rdata_tmp[32 +: 8];
+//            assign axi_rdata[16 +: 8] = axi_rdata_tmp[40 +: 8];
+//            assign axi_rdata[ 8 +: 8] = axi_rdata_tmp[48 +: 8];
+//            assign axi_rdata[ 0 +: 8] = axi_rdata_tmp[56 +: 8];
+//        end else begin
+//            assign axi_rdata = axi_rdata_tmp;
+//        end
+//    endgenerate
 
-    assign axi_r_go = axi_rvalid && axi_rready;
-    assign axi_b_go  = axi_bvalid & axi_bready;
+//    assign axi_r_go = axi_rvalid && axi_rready;
+//    assign axi_b_go  = axi_bvalid & axi_bready;
 
    
 

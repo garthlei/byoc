@@ -1,4 +1,5 @@
 +incdir+hw/outdir/nv_small/vmod/include/
++incdir+hw/outdir/nv_small/vmod/vlibs/
 
 NV_NVDLA_wrapper.v
 

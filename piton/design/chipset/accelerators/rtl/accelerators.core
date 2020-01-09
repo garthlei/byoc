@@ -6,6 +6,7 @@ filesets:
     rtl:
         files:
             - nvlink_top.v
+	    - axilite_noc_bridge.v
         file_type: verilogSource-2001
 
 targets:
