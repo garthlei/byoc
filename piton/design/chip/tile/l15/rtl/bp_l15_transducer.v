@@ -13,20 +13,12 @@ module bp_l15_transducer
 
    // BP -> L1.5
    //
-   // Status signals
-   , output logic                                      ready_o
-   //, output                                            cache_miss_o
-
-   // Miss type
-   , input                                             load_miss_i
-   , input                                             store_miss_i
-   //, input                                             lr_miss_i
-   , input                                             uncached_load_req_i
-   , input                                             uncached_store_req_i
    // Miss info
+   , input                                             miss_v_i
+   , output logic                                      miss_yumi_o
+   , input                                             uncached_i
    , input [39:0]                                      miss_addr_i
    , input [2:0]                                       lru_way_i
-   //, input [7:0]                                       dirty_i
    , input                                             store_i
    , input [63:0]                                      store_data_i
    , input [1:0]                                       size_op_i
@@ -97,34 +89,10 @@ module bp_l15_transducer
     ,e_store
   } state_n, state_r;
 
-  wire miss_fifo_v_li = load_miss_i | store_miss_i | store_i | uncached_store_req_i | uncached_load_req_i;
-  wire uncached_li = uncached_store_req_i | uncached_load_req_i;
-  wire store_li = store_i | uncached_store_req_i;
-  logic miss_fifo_ready_lo;
-  logic [39:0] miss_addr_lo;
-  logic [2:0] lru_way_lo;
-  logic store_lo;
-  logic uncached_lo;
-  logic miss_v_lo, miss_yumi_li;
-  bsg_one_fifo
-   #(.width_p(40+3+1+1))
-   miss_fifo
-    (.clk_i(clk_i)
-     ,.reset_i(reset_i)
-     
-     ,.data_i({uncached_li, store_li, lru_way_i, miss_addr_i})
-     ,.v_i(miss_fifo_v_li)
-     ,.ready_o(miss_fifo_ready_lo)
-
-     ,.data_o({uncached_lo, store_lo, lru_way_lo, miss_addr_lo})
-     ,.v_o(miss_v_lo)
-     ,.yumi_i(miss_yumi_li)
-     );
-
   logic [127:0] miss_data_li;
   logic miss_data_v_li, miss_data_ready_lo;
   logic [511:0] load_cacheline_lo;
-  logic [63:0] load_uncached_lo;
+  logic [63:0] load_uncached_i;
   logic load_cacheline_v_lo, load_cacheline_yumi_li;
   bsg_serial_in_parallel_out_dynamic
    #(.width_p(128)
@@ -136,7 +104,7 @@ module bp_l15_transducer
 
      ,.data_i(miss_data_li)
      ,.v_i(miss_data_v_li)
-     ,.len_i((uncached_lo ? 2'd0 : 2'd3))
+     ,.len_i((uncached_i ? 2'd0 : 2'd3))
      ,.ready_o(miss_data_ready_lo)
      ,.len_ready_o()
 
@@ -145,11 +113,11 @@ module bp_l15_transducer
      ,.yumi_i(load_cacheline_yumi_li)
      );
   // Dequeue whenever useful
-  assign load_cacheline_yumi_li = load_cacheline_v_lo & miss_yumi_li;
+  assign load_cacheline_yumi_li = load_cacheline_v_lo & miss_yumi_o;
 
   logic [`BSG_WIDTH(4)-1:0] miss_cnt;
   logic miss_up_li;
-  wire miss_clr_li = miss_yumi_li;
+  wire miss_clr_li = miss_yumi_o;
   bsg_counter_clear_up
    #(.max_val_p(4)
      ,.init_val_p(0)
@@ -167,8 +135,6 @@ module bp_l15_transducer
 
   always_comb
     begin
-      ready_o = 1'b0;
-
       transducer_l15_rqtype = '0;
       transducer_l15_nc = '0;
       transducer_l15_size = '0;
@@ -184,7 +150,7 @@ module bp_l15_transducer
       miss_data_li = '0;
       miss_data_v_li = '0;
 
-      miss_yumi_li = '0;
+      miss_yumi_o = '0;
 
       data_mem_pkt_v_o = '0;
       tag_mem_pkt_v_o = '0;
@@ -199,10 +165,8 @@ module bp_l15_transducer
           end
         e_ready:
           begin
-            ready_o = miss_fifo_ready_lo;
-
-            state_n = miss_v_lo 
-                      ? store_lo
+            state_n = miss_v_i 
+                      ? store_i
                         ? e_store_send
                         : e_load_send 
                       : e_ready;
@@ -210,8 +174,8 @@ module bp_l15_transducer
         e_load_send:
           begin
             transducer_l15_rqtype = `LOAD_RQ;
-            transducer_l15_nc = uncached_lo;
-            transducer_l15_size = uncached_lo
+            transducer_l15_nc = uncached_i;
+            transducer_l15_size = uncached_i
                                   ? (size_op_i == 2'b00)
                                     ? `PCX_SZ_1B
                                     : (size_op_i == 2'b01)
@@ -220,13 +184,13 @@ module bp_l15_transducer
                                         ? `PCX_SZ_4B
                                         : `PCX_SZ_8B
                                   : `PCX_SZ_16B;
-            transducer_l15_address = miss_addr_lo + (miss_cnt << `BSG_SAFE_CLOG2(128));
+            transducer_l15_address = miss_addr_i + (miss_cnt << `BSG_SAFE_CLOG2(128));
             /* TODO: Increase associativity */
-            transducer_l15_l1rplway = lru_way_lo[1:0];
+            transducer_l15_l1rplway = lru_way_i[1:0];
             transducer_l15_val = 1'b1;
 
             state_n = l15_transducer_ack
-                      ? uncached_lo
+                      ? uncached_i
                         ? e_load
                         : e_blockload
                       : e_load_send;
@@ -235,7 +199,7 @@ module bp_l15_transducer
           begin
             transducer_l15_req_ack = (l15_transducer_val & (l15_transducer_returntype == `LOAD_RET));
 
-            miss_yumi_li = l15_transducer_val;
+            miss_yumi_o = l15_transducer_val;
 
             miss_data_li = {l15_transducer_data_1, l15_transducer_data_0};
             miss_data_v_li = transducer_l15_req_ack;
@@ -247,17 +211,17 @@ module bp_l15_transducer
             data_mem_pkt_v_o = ~data_mem_pkt_yumi_r;
 
             // 128 bits 1-8 bytes
-            load_uncached_lo = (size_op_i == 2'b00)
-                                  ? (load_cacheline_lo >> (8*(miss_addr_lo[3+:4])))
+            load_uncached_i = (size_op_i == 2'b00)
+                                  ? (load_cacheline_lo >> (8*(miss_addr_i[3+:4])))
                                   : (size_op_i == 2'b01)
-                                    ? (load_cacheline_lo >> (8*(miss_addr_lo[3+:3])))
+                                    ? (load_cacheline_lo >> (8*(miss_addr_i[3+:3])))
                                     : (size_op_i == 2'b10)
-                                      ? (load_cacheline_lo >> (8*(miss_addr_lo[3+:2])))
-                                      : (load_cacheline_lo >> (8*(miss_addr_lo[3+:1])));
+                                      ? (load_cacheline_lo >> (8*(miss_addr_i[3+:2])))
+                                      : (load_cacheline_lo >> (8*(miss_addr_i[3+:1])));
 
-            miss_yumi_li = data_mem_pkt_yumi_r;
+            miss_yumi_o = data_mem_pkt_yumi_r;
 
-            state_n = miss_yumi_li ? e_ready : e_load_done;
+            state_n = miss_yumi_o ? e_ready : e_load_done;
           end
         e_blockload:
           begin
@@ -280,14 +244,14 @@ module bp_l15_transducer
             tag_mem_pkt_v_o = ~tag_mem_pkt_yumi_r;
             stat_mem_pkt_v_o = ~stat_mem_pkt_yumi_r;
 
-            miss_yumi_li = data_mem_pkt_yumi_r & tag_mem_pkt_yumi_r & stat_mem_pkt_yumi_r;
+            miss_yumi_o = data_mem_pkt_yumi_r & tag_mem_pkt_yumi_r & stat_mem_pkt_yumi_r;
 
-            state_n = miss_yumi_li ? e_ready : e_blockload_done;
+            state_n = miss_yumi_o ? e_ready : e_blockload_done;
           end
         e_store_send:
           begin
             transducer_l15_rqtype = `STORE_RQ;
-            transducer_l15_nc = uncached_lo;
+            transducer_l15_nc = uncached_i;
             transducer_l15_size = (size_op_i == 2'b00)
                                   ? `PCX_SZ_1B
                                   : (size_op_i == 2'b01)
@@ -295,7 +259,7 @@ module bp_l15_transducer
                                     : (size_op_i == 2'b10)
                                       ? `PCX_SZ_4B
                                       : `PCX_SZ_8B;
-            transducer_l15_address = miss_addr_lo;
+            transducer_l15_address = miss_addr_i;
             /* TODO: This should replicate based on size */
             transducer_l15_data = (size_op_i == 2'b00)
                                   ? {8{store_data_i[0+:8]}}
@@ -304,7 +268,7 @@ module bp_l15_transducer
                                     : (size_op_i == 2'b10)
                                       ? {2{store_data_i[0+:32]}}
                                       : {1{store_data_i[0+:64]}};
-            transducer_l15_l1rplway = lru_way_lo[1:0];
+            transducer_l15_l1rplway = lru_way_i[1:0];
             transducer_l15_val = 1'b1;
 
             state_n = l15_transducer_ack ? e_store : e_store_send;
@@ -313,7 +277,7 @@ module bp_l15_transducer
           begin
             transducer_l15_req_ack = (l15_transducer_val & (l15_transducer_returntype == `ST_ACK));
 
-            miss_yumi_li = l15_transducer_val;
+            miss_yumi_o = l15_transducer_val;
 
             state_n = l15_transducer_val ? e_ready : e_store;
           end
@@ -328,7 +292,7 @@ module bp_l15_transducer
       state_r <= state_n;
 
   always_ff @(posedge clk_i)
-    if (reset_i || miss_yumi_li)
+    if (reset_i || miss_yumi_o)
       begin
         data_mem_pkt_yumi_r <= 1'b0;
         tag_mem_pkt_yumi_r <= 1'b0;
@@ -341,19 +305,19 @@ module bp_l15_transducer
         stat_mem_pkt_yumi_r <= stat_mem_pkt_yumi_r | stat_mem_pkt_yumi_i;
       end
 
-  assign data_mem_pkt.index = miss_addr_lo[byte_offset_width_lp+:index_width_lp];
-  assign data_mem_pkt.way_id = lru_way_lo;
-  assign data_mem_pkt.data = uncached_lo ? load_uncached_lo : load_cacheline_lo;
+  assign data_mem_pkt.index = miss_addr_i[byte_offset_width_lp+:index_width_lp];
+  assign data_mem_pkt.way_id = lru_way_i;
+  assign data_mem_pkt.data = uncached_i ? load_uncached_i : load_cacheline_lo;
   assign data_mem_pkt.opcode = e_dcache_lce_data_mem_write;
 
-  assign tag_mem_pkt.index = miss_addr_lo[byte_offset_width_lp+:index_width_lp];
-  assign tag_mem_pkt.way_id = lru_way_lo;
+  assign tag_mem_pkt.index = miss_addr_i[byte_offset_width_lp+:index_width_lp];
+  assign tag_mem_pkt.way_id = lru_way_i;
   assign tag_mem_pkt.state = '0;
-  assign tag_mem_pkt.tag = miss_addr_lo[paddr_width_p-1-:ptag_width_p];
+  assign tag_mem_pkt.tag = miss_addr_i[paddr_width_p-1-:ptag_width_p];
   assign tag_mem_pkt.opcode = e_dcache_lce_tag_mem_set_tag;
 
-  assign stat_mem_pkt.index = miss_addr_lo[byte_offset_width_lp+:index_width_lp];
-  assign stat_mem_pkt.way_id = lru_way_lo;
+  assign stat_mem_pkt.index = miss_addr_i[byte_offset_width_lp+:index_width_lp];
+  assign stat_mem_pkt.way_id = lru_way_i;
   assign stat_mem_pkt.opcode = e_dcache_lce_stat_mem_set_clear;
 
   // BP -> L1.15

@@ -900,25 +900,126 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
         .spc_grst_l(spc_grst_l)
     );
 
+  logic [1:0][39:0] miss_addr_fifo_lo;
+  logic [1:0][1:0] miss_size_op_lo;
+  logic [1:0][2:0] miss_lru_lo;
+  logic [1:0] is_store_lo;
+  logic [1:0] uncached_lo;
+  logic [1:0][63:0] miss_data_fifo_lo;
+  logic [1:0] miss_fifo_ready_lo, miss_fifo_v_li, miss_v_lo, miss_yumi_li;
+  for (genvar i = 0; i < 2; i++) begin : miss_fifo
+    assign miss_fifo_v_li[i] = load_miss_lo[i] | store_miss_lo[i] | store_lo[i] | uncached_store_req_lo[i] | uncached_load_req_lo[i];
+    wire is_store_li = store_lo[i] | uncached_store_req_lo[i];
+    wire uncached_li = uncached_store_req_lo[i] | uncached_load_req_lo[i];
+    bsg_one_fifo
+     #(.width_p(40+3+1+1+2+64))
+     miss_fifo
+      (.clk_i(clk)
+       ,.reset_i(~rst_n_f)
+
+       ,.data_i({uncached_li, is_store_li, lru_way_lo[i], size_op_lo[i], miss_addr_lo[i], store_data_lo[i]})
+       ,.v_i(miss_fifo_v_li[i])
+       ,.ready_o(miss_fifo_ready_lo[i])
+
+       ,.data_o({uncached_lo[i], is_store_lo[i], miss_lru_lo[i], miss_size_op_lo[i], miss_addr_fifo_lo[i], miss_data_fifo_lo[i]})
+       ,.v_o(miss_v_lo[i])
+       ,.yumi_i(miss_yumi_li[i])
+       );
+    assign l15_ready_lo[i] = miss_fifo_ready_lo[i];
+  end
+
+  logic        arb_miss_v_lo;
+  logic        arb_miss_yumi_li;
+  logic        arb_uncached_lo;
+  logic [39:0] arb_miss_addr_lo;
+  logic [2:0]  arb_miss_lru_lo;
+  logic        arb_is_store_lo;
+  logic [63:0] arb_miss_data_lo;
+  logic [1:0]  arb_miss_size_lo;
+  
+  logic [522:0] arb_data_mem_pkt_li;
+  logic arb_data_mem_pkt_v_li, arb_data_mem_pkt_yumi_lo;
+  logic [41:0] arb_tag_mem_pkt_li;
+  logic arb_tag_mem_pkt_v_li, arb_tag_mem_pkt_yumi_lo;
+  logic [10:0] arb_stat_mem_pkt_li;
+  logic arb_stat_mem_pkt_v_li, arb_stat_mem_pkt_yumi_lo;
+  always_comb begin
+    if (miss_v_lo[1]) begin
+      arb_miss_v_lo = miss_v_lo[1];
+      arb_uncached_lo = uncached_lo[1];
+      arb_miss_addr_lo = miss_addr_fifo_lo[1];
+      arb_miss_lru_lo = miss_lru_lo[1];
+      arb_is_store_lo = is_store_lo[1];
+      arb_miss_data_lo = miss_data_fifo_lo[1];
+      arb_miss_size_lo = miss_size_op_lo[1];
+
+      miss_yumi_li[0] = '0;
+      miss_yumi_li[1] = arb_miss_yumi_li;
+
+      data_mem_pkt_li[0] = '0;
+      data_mem_pkt_v_li[0] = '0;
+      data_mem_pkt_li[1] = arb_data_mem_pkt_li;
+      data_mem_pkt_v_li[1] = arb_data_mem_pkt_v_li;
+      arb_data_mem_pkt_yumi_lo = data_mem_pkt_yumi_lo[1];
+
+      tag_mem_pkt_li[0] = '0;
+      tag_mem_pkt_v_li[0] = '0;
+      tag_mem_pkt_li[1] = arb_tag_mem_pkt_li;
+      tag_mem_pkt_v_li[1] = arb_tag_mem_pkt_v_li;
+      arb_tag_mem_pkt_yumi_lo = tag_mem_pkt_yumi_lo[1];
+
+      stat_mem_pkt_li[0] = '0;
+      stat_mem_pkt_v_li[0] = '0;
+      stat_mem_pkt_li[1] = arb_stat_mem_pkt_li;
+      stat_mem_pkt_v_li[1] = arb_stat_mem_pkt_v_li;
+      arb_stat_mem_pkt_yumi_lo = stat_mem_pkt_yumi_lo[1];
+
+    end else begin
+      arb_miss_v_lo = miss_v_lo[0];
+      arb_uncached_lo = uncached_lo[0];
+      arb_miss_addr_lo = miss_addr_fifo_lo[0];
+      arb_miss_lru_lo = miss_lru_lo[0];
+      arb_is_store_lo = is_store_lo[0];
+      arb_miss_data_lo = miss_data_fifo_lo[0];
+      arb_miss_size_lo = miss_size_op_lo[0];
+
+      miss_yumi_li[0] = arb_miss_yumi_li;
+      miss_yumi_li[1] = '0;
+
+      data_mem_pkt_li[0] = arb_data_mem_pkt_li;
+      data_mem_pkt_v_li[0] = arb_data_mem_pkt_v_li;
+      arb_data_mem_pkt_yumi_lo = data_mem_pkt_yumi_lo[0];
+      data_mem_pkt_li[1] = '0;
+      data_mem_pkt_v_li[1] = '0;
+
+      tag_mem_pkt_li[0] = arb_tag_mem_pkt_li;
+      tag_mem_pkt_v_li[0] = arb_tag_mem_pkt_v_li;
+      arb_tag_mem_pkt_yumi_lo = tag_mem_pkt_yumi_lo[0];
+      tag_mem_pkt_li[1] = '0;
+      tag_mem_pkt_v_li[1] = '0;
+
+      stat_mem_pkt_li[0] = arb_stat_mem_pkt_li;
+      stat_mem_pkt_v_li[0] = arb_stat_mem_pkt_v_li;
+      arb_stat_mem_pkt_yumi_lo = stat_mem_pkt_yumi_lo[0];
+      stat_mem_pkt_li[1] = '0;
+      stat_mem_pkt_v_li[1] = '0;
+    end
+  end
+
     bp_l15_transducer bp_l15_transducer(
         .clk_i                              (clk),
         .reset_i                            (~rst_n_f),
 
         // OpenPiton Bus
         // BP -> L1.5
-        .ready_o                            (l15_ready_lo[0]),
-        .load_miss_i                        (load_miss_lo[0]),
-        .store_miss_i                       (store_miss_lo[0]),
-
-        .miss_addr_i                        (miss_addr_lo[0]),
-        .lru_way_i                          (lru_way_lo[0]),
-
-        .uncached_load_req_i                (uncached_load_req_lo[0]),
-        .uncached_store_req_i               (uncached_store_req_lo[0]),
-
-        .store_i                            (store_lo[0]),
-        .store_data_i                       (store_data_lo[0]),
-        .size_op_i                          (size_op_lo[0]),
+        .miss_v_i                           (arb_miss_v_lo),
+        .miss_yumi_o                        (arb_miss_yumi_li),
+        .uncached_i                         (arb_uncached_lo),
+        .miss_addr_i                        (arb_miss_addr_lo),
+        .lru_way_i                          (arb_miss_lru_lo),
+        .store_i                            (arb_is_store_lo),
+        .store_data_i                       (arb_miss_data_lo),
+        .size_op_i                          (arb_miss_size_lo),
 
         // L1.5 -> BP
         .l15_transducer_ack                 (l15_transducer_ack),
@@ -949,17 +1050,17 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         .transducer_l15_req_ack             (transducer_l15_req_ack),
 
-        .data_mem_pkt_o                     (data_mem_pkt_li[0]),
-        .data_mem_pkt_v_o                   (data_mem_pkt_v_li[0]),
-        .data_mem_pkt_yumi_i                (data_mem_pkt_yumi_lo[0]),
+        .data_mem_pkt_o                     (arb_data_mem_pkt_li),
+        .data_mem_pkt_v_o                   (arb_data_mem_pkt_v_li),
+        .data_mem_pkt_yumi_i                (arb_data_mem_pkt_yumi_lo),
 
-        .tag_mem_pkt_o                      (tag_mem_pkt_li[0]),
-        .tag_mem_pkt_v_o                    (tag_mem_pkt_v_li[0]),
-        .tag_mem_pkt_yumi_i                 (tag_mem_pkt_yumi_lo[0]),
+        .tag_mem_pkt_o                      (arb_tag_mem_pkt_li),
+        .tag_mem_pkt_v_o                    (arb_tag_mem_pkt_v_li),
+        .tag_mem_pkt_yumi_i                 (arb_tag_mem_pkt_yumi_lo),
 
-        .stat_mem_pkt_o                     (stat_mem_pkt_li[0]),
-        .stat_mem_pkt_v_o                   (stat_mem_pkt_v_li[0]),
-        .stat_mem_pkt_yumi_i                (stat_mem_pkt_yumi_lo[0])
+        .stat_mem_pkt_o                     (arb_stat_mem_pkt_li),
+        .stat_mem_pkt_v_o                   (arb_stat_mem_pkt_v_li),
+        .stat_mem_pkt_yumi_i                (arb_stat_mem_pkt_yumi_lo)
     );
 
 end
