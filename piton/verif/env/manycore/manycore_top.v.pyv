@@ -433,7 +433,7 @@ system system(
 `ifndef PITON_BLACKPARROT
         .rst_l     (`CORE_REF0.reset_l)
 `else
-        .rst_l     (`CORE_REF0.reset_i)
+        .rst_l     (~`CORE_REF0.reset_i)
 `endif
         );
 

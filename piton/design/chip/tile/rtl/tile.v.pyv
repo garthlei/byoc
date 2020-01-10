@@ -871,6 +871,7 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
                           ,default: '0
                           };
 
+  logic [1:0] miss_fifo_ready_lo, miss_fifo_v_li, miss_v_lo, miss_yumi_li;
     bp_core_minimal proc (
         .clk_i                             (clk_gated),
         .reset_i                           (~rst_n_f),
@@ -886,9 +887,9 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
         // Miss interface
         //
         .lce_ready_i(l15_ready_lo),
-        .lce_miss_i(~l15_ready_lo),
-        .credits_full_i(1'b1),
-        .credits_empty_i('0),
+        .lce_miss_i(load_miss_lo | store_miss_lo | miss_v_lo),
+        .credits_full_i(1'b0),
+        .credits_empty_i(1'b1),
 
         .load_miss_o(load_miss_lo),
         .store_miss_o(store_miss_lo),
@@ -947,7 +948,6 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
   logic [1:0] is_store_lo;
   logic [1:0] uncached_lo;
   logic [1:0][63:0] miss_data_fifo_lo;
-  logic [1:0] miss_fifo_ready_lo, miss_fifo_v_li, miss_v_lo, miss_yumi_li;
   logic transducer_ready_lo;
   for (genvar i = 0; i < 2; i++) begin : miss_fifo
     assign miss_fifo_v_li[i] = load_miss_lo[i] | store_miss_lo[i] | store_lo[i] | uncached_store_req_lo[i] | uncached_load_req_lo[i];

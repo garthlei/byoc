@@ -242,8 +242,8 @@ module bp_l15_transducer
                                       : (size_op_i == 2'b10)
                                         ? `PCX_SZ_4B
                                         : `PCX_SZ_8B
-                                  : `PCX_SZ_16B;
-            transducer_l15_address = miss_addr_i + (miss_cnt << `BSG_SAFE_CLOG2(128));
+                                  : `PCX_SZ_8B;
+            transducer_l15_address = (miss_addr_i & 40'h3_ffff_ffc0) + (miss_cnt << `BSG_SAFE_CLOG2(16));
             /* TODO: Increase associativity */
             transducer_l15_l1rplway = lru_way_i[1:0];
             transducer_l15_val = 1'b1;
@@ -367,7 +367,7 @@ module bp_l15_transducer
   assign tag_mem_pkt.way_id = (state_r inside {e_isync, e_dsync})
                               ? '0
                               : lru_way_i;
-  assign tag_mem_pkt.state = '0;
+  assign tag_mem_pkt.state = e_COH_M;
   assign tag_mem_pkt.tag = (state_r inside {e_isync, e_dsync})
                            ? inv_addr_li[paddr_width_p-1-:ptag_width_p]
                            : miss_addr_i[paddr_width_p-1-:ptag_width_p];
