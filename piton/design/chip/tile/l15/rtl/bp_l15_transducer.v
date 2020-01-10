@@ -13,6 +13,8 @@ module bp_l15_transducer
 
    // BP -> L1.5
    //
+   , output logic                                      isync_o
+   , output logic                                      dsync_o
    , output logic                                      ready_o
    // Miss info
    , input                                             miss_v_i
@@ -72,14 +74,17 @@ module bp_l15_transducer
   bp_be_dcache_lce_data_mem_pkt_s data_mem_pkt;
   bp_be_dcache_lce_tag_mem_pkt_s tag_mem_pkt;
   bp_be_dcache_lce_stat_mem_pkt_s stat_mem_pkt;
-  logic data_mem_pkt_yumi_r, tag_mem_pkt_yumi_r, stat_mem_pkt_yumi_r;
 
-  localparam byte_offset_width_lp = `BSG_SAFE_CLOG2(dword_width_p >> 3);
+  localparam byte_offset_width_lp=`BSG_SAFE_CLOG2(dword_width_p>>3);
+  localparam word_offset_width_lp=`BSG_SAFE_CLOG2(8);
+  localparam block_offset_width_lp=(word_offset_width_lp+byte_offset_width_lp);
   localparam index_width_lp       = `BSG_SAFE_CLOG2(lce_sets_p);
 
   enum logic [3:0]
   {
     e_reset
+    ,e_isync
+    ,e_dsync
     ,e_ready
     ,e_load_send
     ,e_load
@@ -134,8 +139,33 @@ module bp_l15_transducer
      );
   wire miss_almost_done = (miss_cnt == 3);
 
+  logic [39:0] inv_addr_li;
+  logic [`BSG_WIDTH(63)-1:0] inv_cnt;
+  logic inv_up_li;
+  wire inv_clr_li = '0;
+  bsg_counter_clear_up
+   #(.max_val_p(63)
+     ,.init_val_p(0)
+     )
+   inv_counter
+    (.clk_i(clk_i)
+     ,.reset_i(reset_i)
+
+     ,.clear_i(inv_clr_li)
+     ,.up_i(inv_up_li)
+
+     ,.count_o(inv_cnt)
+     );
+  wire inv_almost_done = (inv_cnt == 63);
+
   always_comb
     begin
+      inv_addr_li = '0;
+
+      inv_up_li = '0;
+
+      isync_o = '0;
+      dsync_o = '0;
       ready_o = '0;
 
       transducer_l15_rqtype = '0;
@@ -164,7 +194,31 @@ module bp_l15_transducer
           begin
             transducer_l15_req_ack = (l15_transducer_val & (l15_transducer_returntype == `INT_RET));
 
-            state_n = transducer_l15_req_ack ? e_ready : e_reset;
+            state_n = transducer_l15_req_ack ? e_isync : e_reset;
+          end
+        e_isync:
+          begin
+            isync_o = 1'b1;
+            inv_addr_li = (inv_cnt << 6);
+
+            stat_mem_pkt_v_o = 1'b1;
+            tag_mem_pkt_v_o = 1'b1;
+
+            inv_up_li = 1'b1;
+
+            state_n = inv_almost_done ? e_dsync : e_isync;
+          end
+        e_dsync:
+          begin
+            dsync_o = 1'b1;
+            inv_addr_li = (inv_cnt << 6);
+
+            stat_mem_pkt_v_o = 1'b1;
+            tag_mem_pkt_v_o = 1'b1;
+
+            inv_up_li = 1'b1;
+
+            state_n = inv_almost_done ? e_ready : e_dsync;
           end
         e_ready:
           begin
@@ -213,7 +267,7 @@ module bp_l15_transducer
           end
         e_load_done:
           begin
-            data_mem_pkt_v_o = ~data_mem_pkt_yumi_r;
+            data_mem_pkt_v_o = 1'b1;
 
             // 128 bits 1-8 bytes
             load_uncached_i = (size_op_i == 2'b00)
@@ -224,7 +278,7 @@ module bp_l15_transducer
                                       ? (load_cacheline_lo >> (8*(miss_addr_i[3+:2])))
                                       : (load_cacheline_lo >> (8*(miss_addr_i[3+:1])));
 
-            miss_yumi_o = data_mem_pkt_yumi_r;
+            miss_yumi_o = data_mem_pkt_yumi_i;
 
             state_n = miss_yumi_o ? e_ready : e_load_done;
           end
@@ -234,7 +288,14 @@ module bp_l15_transducer
 
             miss_up_li = transducer_l15_req_ack;
 
-            miss_data_li = {l15_transducer_data_1, l15_transducer_data_0};
+            miss_data_li = {l15_transducer_data_1[0+:8] , l15_transducer_data_1[8+:8] ,
+                            l15_transducer_data_1[16+:8], l15_transducer_data_1[24+:8],
+                            l15_transducer_data_1[32+:8], l15_transducer_data_1[40+:8],
+                            l15_transducer_data_1[48+:8], l15_transducer_data_1[56+:8],
+                            l15_transducer_data_0[0+:8] , l15_transducer_data_0[8+:8] ,
+                            l15_transducer_data_0[16+:8], l15_transducer_data_0[24+:8],
+                            l15_transducer_data_0[32+:8], l15_transducer_data_0[40+:8],
+                            l15_transducer_data_0[48+:8], l15_transducer_data_0[56+:8]};
             miss_data_v_li = transducer_l15_req_ack;
 
             state_n = transducer_l15_req_ack 
@@ -245,11 +306,10 @@ module bp_l15_transducer
           end
         e_blockload_done:
           begin
-            data_mem_pkt_v_o = ~data_mem_pkt_yumi_r;
-            tag_mem_pkt_v_o = ~tag_mem_pkt_yumi_r;
-            stat_mem_pkt_v_o = ~stat_mem_pkt_yumi_r;
+            data_mem_pkt_v_o = 1'b1;
+            tag_mem_pkt_v_o = 1'b1;
 
-            miss_yumi_o = data_mem_pkt_yumi_r & tag_mem_pkt_yumi_r & stat_mem_pkt_yumi_r;
+            miss_yumi_o = data_mem_pkt_yumi_i & tag_mem_pkt_yumi_i;
 
             state_n = miss_yumi_o ? e_ready : e_blockload_done;
           end
@@ -296,33 +356,29 @@ module bp_l15_transducer
     else
       state_r <= state_n;
 
-  always_ff @(posedge clk_i)
-    if (reset_i || miss_yumi_o)
-      begin
-        data_mem_pkt_yumi_r <= 1'b0;
-        tag_mem_pkt_yumi_r <= 1'b0;
-        stat_mem_pkt_yumi_r <= 1'b0;
-      end
-    else
-      begin
-        data_mem_pkt_yumi_r <= data_mem_pkt_yumi_r | data_mem_pkt_yumi_i;
-        tag_mem_pkt_yumi_r <= tag_mem_pkt_yumi_r | tag_mem_pkt_yumi_i;
-        stat_mem_pkt_yumi_r <= stat_mem_pkt_yumi_r | stat_mem_pkt_yumi_i;
-      end
-
-  assign data_mem_pkt.index = miss_addr_i[byte_offset_width_lp+:index_width_lp];
+  assign data_mem_pkt.index = miss_addr_i[block_offset_width_lp+:index_width_lp];
   assign data_mem_pkt.way_id = lru_way_i;
   assign data_mem_pkt.data = uncached_i ? load_uncached_i : load_cacheline_lo;
   assign data_mem_pkt.opcode = e_dcache_lce_data_mem_write;
 
-  assign tag_mem_pkt.index = miss_addr_i[byte_offset_width_lp+:index_width_lp];
-  assign tag_mem_pkt.way_id = lru_way_i;
+  assign tag_mem_pkt.index = (state_r inside {e_isync, e_dsync})
+                             ? inv_addr_li[block_offset_width_lp+:index_width_lp]
+                             : miss_addr_i[block_offset_width_lp+:index_width_lp];
+  assign tag_mem_pkt.way_id = (state_r inside {e_isync, e_dsync})
+                              ? '0
+                              : lru_way_i;
   assign tag_mem_pkt.state = '0;
-  assign tag_mem_pkt.tag = miss_addr_i[paddr_width_p-1-:ptag_width_p];
-  assign tag_mem_pkt.opcode = e_dcache_lce_tag_mem_set_tag;
+  assign tag_mem_pkt.tag = (state_r inside {e_isync, e_dsync})
+                           ? inv_addr_li[paddr_width_p-1-:ptag_width_p]
+                           : miss_addr_i[paddr_width_p-1-:ptag_width_p];
+  assign tag_mem_pkt.opcode = (state_r inside {e_isync, e_dsync}) 
+                              ? e_dcache_lce_tag_mem_set_clear 
+                              : e_dcache_lce_tag_mem_set_tag;
 
-  assign stat_mem_pkt.index = miss_addr_i[byte_offset_width_lp+:index_width_lp];
-  assign stat_mem_pkt.way_id = lru_way_i;
+  assign stat_mem_pkt.index = inv_addr_li[block_offset_width_lp+:index_width_lp];
+  assign stat_mem_pkt.way_id = (state_r inside {e_isync, e_dsync})
+                               ? '0
+                               : lru_way_i;
   assign stat_mem_pkt.opcode = e_dcache_lce_stat_mem_set_clear;
 
   // BP -> L1.15
