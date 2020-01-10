@@ -39,7 +39,7 @@ module nvlink_top #(
     parameter AXI_ID_WIDTH     = 6,
     parameter APB_ADDR_WIDTH   = 32,
     parameter APB_DATA_WIDTH   = 32,
-    parameter SWAP_ENDIANESS = 0
+    parameter SWAP_ENDIANESS = 1
 ) (
     input 			  chipset_clk,
 
