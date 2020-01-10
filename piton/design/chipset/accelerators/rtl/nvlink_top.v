@@ -287,6 +287,8 @@ axi2apb #(
             .PSLVERR    ( pslverr                )
         );
 
+   //`ifdef PITON_FPGA_NVDLA
+   
    //AXILITE --> CPU
 axilite_noc_bridge #(
     .SLAVE_RESP_BYTEWIDTH   (4),
@@ -337,6 +339,15 @@ axilite_noc_bridge #(
     .axi_bvalid        (noc_axi_bvalid),
     .axi_bready        (noc_axi_bready)
 );
+   //`else   // PITON_FPGA_ETHERNETLITE
+
+    //assign noc2_out_val    = 1'b0;
+    //assign noc3_in_rdy    = 1'b0;
+    //assign noc2_out_data   = {`NOC_DATA_WIDTH{1'b0}};
+
+
+
+//`endif  // PITON_FPGA_ETHERNETLITE
 
 //`ifdef PITON_FPGA_NVDLA
 //APB -->NVDLA

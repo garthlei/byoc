@@ -60,49 +60,49 @@ module axilite_noc_bridge #(
     parameter ALIGN_RDATA          = 1
 ) (
     // Clock + Reset
-    input wire 				       clk,
-    input wire 				       rst,
+    input wire 					clk,
+    input wire 					rst,
 
-    input [`NOC_CHIPID_WIDTH-1:0] 	       chip_id,
-    input [`NOC_X_WIDTH -1:0] 		       x_id,
-    input [`NOC_Y_WIDTH -1:0] 		       y_id,
+    input [`NOC_CHIPID_WIDTH-1:0] 		chip_id,
+    input [`NOC_X_WIDTH -1:0] 			x_id,
+    input [`NOC_Y_WIDTH -1:0] 			y_id,
 
     // Memory Splitter <- AXI SPI
-    output reg 				       bridge_splitter_val,
-    output reg [`NOC_DATA_WIDTH-1:0] 	       bridge_splitter_data,
-    input wire 				       splitter_bridge_rdy,
+    output reg 					bridge_splitter_val,
+    output reg [`NOC_DATA_WIDTH-1:0] 		bridge_splitter_data,
+    input wire 					splitter_bridge_rdy,
    
     // Memory Splitter -> AXI SPI
-    input wire 				       splitter_bridge_val,
-    input wire [`NOC_DATA_WIDTH-1:0] 	       splitter_bridge_data,
-    output wire 			       bridge_splitter_rdy,
+    input wire 					splitter_bridge_val,
+    input wire [`NOC_DATA_WIDTH-1:0] 		splitter_bridge_data,
+    output wire 				bridge_splitter_rdy,
 
     // AXI Write Address Channel Signals
-    input reg [`C_M_AXI_LITE_ADDR_WIDTH-1:0]   axi_awaddr,
-    input wire 				       axi_awvalid,
-    output wire 			       axi_awready,
+    input wire [`C_M_AXI_LITE_ADDR_WIDTH-1:0] 	axi_awaddr,
+    input wire 					axi_awvalid,
+    output wire 				axi_awready,
 
     // AXI Write Data Channel Signals
-    input wire [`C_M_AXI_LITE_DATA_WIDTH-1:0]  axi_wdata,
-    input reg [`C_M_AXI_LITE_DATA_WIDTH/8-1:0] axi_wstrb,
-    input wire 				       axi_wvalid,
-    output wire 			       axi_wready,
+    input wire [`C_M_AXI_LITE_DATA_WIDTH-1:0] 	axi_wdata,
+    input wire [`C_M_AXI_LITE_DATA_WIDTH/8-1:0] axi_wstrb,
+    input wire 					axi_wvalid,
+    output wire 				axi_wready,
 
     // AXI Read Address Channel Signals
-    input reg [`C_M_AXI_LITE_ADDR_WIDTH-1:0]   axi_araddr,
-    input reg 				       axi_arvalid,
-    output 				       axi_arready,
+    input wire [`C_M_AXI_LITE_ADDR_WIDTH-1:0] 	axi_araddr,
+    input wire 					axi_arvalid,
+    output 					axi_arready,
 
     // AXI Read Data Channel Signals
-    output reg [`C_M_AXI_LITE_DATA_WIDTH-1:0]  axi_rdata,
-    output reg [`C_M_AXI_LITE_RESP_WIDTH-1:0]  axi_rresp,
-    output reg 				       axi_rvalid,
-    input reg 				       axi_rready,
+    output wire [`C_M_AXI_LITE_DATA_WIDTH-1:0] 	axi_rdata,
+    output reg [`C_M_AXI_LITE_RESP_WIDTH-1:0] 	axi_rresp,
+    output reg 					axi_rvalid,
+    input wire 					axi_rready,
 
     // AXI Write Response Channel Signals
-    output reg [`C_M_AXI_LITE_RESP_WIDTH-1:0]  axi_bresp,
-    output reg 				       axi_bvalid,
-    input reg 				       axi_bready
+    output reg [`C_M_AXI_LITE_RESP_WIDTH-1:0] 	axi_bresp,
+    output reg 					axi_bvalid,
+    input wire 					axi_bready
 );
 
 //==============================================================================
