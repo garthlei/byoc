@@ -2127,15 +2127,19 @@ sub assemble_diag
       push @{$opt{asm_diag_root}}, "$ENV{ARIANE_ROOT}/tmp/riscv-tests/build/benchmarks";
     }
 
+    if ($opt{blackparrot} and $opt{precompiled}) {
+      push @{$opt{asm_diag_root}}, "$ENV{HOME}/scratch/pre-alpha-release/bp_common/test/mem/";
+    }
+
     # find diagnostic
     my $diag_full_path = &find_diag_path ($opt{asm_diag_name}, $opt{asm_diag_path}, $opt{asm_diag_root}) ;
 
     my $diag_name ;
     if ($opt{asm_diag_name} =~ /\.pal/)        { $diag_name = "diag.pal"  ; }
     elsif ($opt{asm_diag_name} =~ /\.s\.gz/)   { $diag_name = "diag.s.gz" ; }
-    elsif ($opt{precompiled} and $opt{ariane}) { $diag_name = "diag.exe"  ; }
-    elsif (($opt{pico} | $opt{ariane}) and ($opt{asm_diag_name} =~ /\.S/)) { $diag_name = "diag.S" ; }
-    elsif (($opt{pico} | $opt{ariane}) and ($opt{asm_diag_name} =~ /\.c/)) { $diag_name = "diag.c" ; }
+    elsif ($opt{precompiled} and ($opt{ariane} | $opt{blackparrot})) { $diag_name = "diag.exe"  ; }
+    elsif (($opt{pico} | $opt{ariane} | $opt{blackparrot}) and ($opt{asm_diag_name} =~ /\.S/)) { $diag_name = "diag.S" ; }
+    elsif (($opt{pico} | $opt{ariane} | $opt{blackparrot}) and ($opt{asm_diag_name} =~ /\.c/)) { $diag_name = "diag.c" ; }
     else { $diag_name = "diag.s" ; }
 
     # copy diagnostic to run area
@@ -2186,7 +2190,7 @@ sub assemble_diag
       my $waitstatus = call_program($cmd, "rv32_as.log");
       die ("DIE. rv32_as compilation error") if ($waitstatus) ;
 
-    } elsif ($opt{ariane}) {
+    } elsif ($opt{ariane} | $opt{blackparrot}) {
       # RISCV flow for RV64IMAC (ARIANE from PULP)
       # only recompile if necessary
       if (!$opt{precompiled}) {
@@ -2572,7 +2576,7 @@ sub parse_args
   }
 
   # in case a precompiled riscv binary for ariane is directly specified
-  if ($opt{precompiled} and $opt{ariane}) {
+  if ($opt{precompiled} and ($opt{ariane} | $opt{blackparrot})) {
     if (!($opt{asm_diag_name} =~ /\.riscv/)) {
         $opt{asm_diag_name} = fileparse($opt{asm_diag_name}, qr/\.[^.]*/);
     }

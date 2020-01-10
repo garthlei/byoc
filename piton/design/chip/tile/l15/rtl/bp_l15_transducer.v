@@ -13,6 +13,7 @@ module bp_l15_transducer
 
    // BP -> L1.5
    //
+   , output logic                                      ready_o
    // Miss info
    , input                                             miss_v_i
    , output logic                                      miss_yumi_o
@@ -135,6 +136,8 @@ module bp_l15_transducer
 
   always_comb
     begin
+      ready_o = '0;
+
       transducer_l15_rqtype = '0;
       transducer_l15_nc = '0;
       transducer_l15_size = '0;
@@ -165,6 +168,8 @@ module bp_l15_transducer
           end
         e_ready:
           begin
+            ready_o = 1'b1;
+
             state_n = miss_v_i 
                       ? store_i
                         ? e_store_send

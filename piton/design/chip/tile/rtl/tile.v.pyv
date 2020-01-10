@@ -842,13 +842,40 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
     logic [1:0] tag_mem_pkt_v_li, tag_mem_pkt_yumi_lo;
     logic [1:0][10:0] stat_mem_pkt_li;
     logic [1:0] stat_mem_pkt_v_li, stat_mem_pkt_yumi_lo;
+
+    typedef enum logic {
+      e_lce_mode_uncached
+      ,e_lce_mode_normal
+    } bp_lce_mode_e;
+
+    typedef enum bit
+    {
+      e_cce_mode_uncached = 1'b0
+      ,e_cce_mode_normal  = 1'b1
+    } bp_cce_mode_e;
+
+    localparam dword_width_p = 64;
+    localparam csr_addr_width_p = 12;
+    localparam instr_width_p = 32;
+    localparam reg_addr_width_p = 5;
+
+//`define declare_bp_cfg_bus_s(vaddr_width_mp, core_id_width_mp, cce_id_width_mp, lce_id_width_mp, cce_pc_width_mp, cce_instr_width_mp)
+    `declare_bp_cfg_bus_s(39, 1, 4, 4, 8, 48);
+    bp_cfg_bus_s cfg_bus_li;
+
+    assign cfg_bus_li = '{freeze: 1'b0
+                          ,icache_mode: e_lce_mode_normal
+                          ,dcache_mode: e_lce_mode_normal
+                          ,default: '0
+                          };
+
     bp_core_minimal proc (
         .clk_i                             (clk_gated),
         .reset_i                           (~rst_n_f),
 
         // Configuration
         //
-        .cfg_bus_i('0),
+        .cfg_bus_i(cfg_bus_li),
         .cfg_npc_data_o(),
         .cfg_irf_data_o(),
         .cfg_csr_data_o(),
@@ -856,10 +883,20 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         // Miss interface
         //
-        .ready_i(l15_ready_lo),
-        .cache_miss_i('0),
+        .lce_ready_i(l15_ready_lo),
+        .lce_miss_i(~l15_ready_lo),
+        .credits_full_i(1'b1),
+        .credits_empty_i('0),
+
         .load_miss_o(load_miss_lo),
         .store_miss_o(store_miss_lo),
+        .lr_miss_o(),
+        .lr_hit_o(),
+
+        .cache_v_o(),
+        .uncached_load_req_o(uncached_load_req_lo),
+        .uncached_store_req_o(uncached_store_req_lo),
+        
         .miss_addr_o(miss_addr_lo),
         .lru_way_o(lru_way_lo),
 
@@ -869,7 +906,6 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
         .size_op_o(size_op_lo),
 
         // Unused
-        .lr_miss_o(),
         .dirty_o(),
 
         // Writeback interface
@@ -878,8 +914,11 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
         // Uncached interface
         //
-        .uncached_load_req_o(uncached_load_req_lo),
-        .uncached_store_req_o(uncached_store_req_lo),
+
+        // Timer
+        .timer_irq_i('0),
+        .software_irq_i('0),
+        .external_irq_i('0),
         
         .data_mem_pkt_i(data_mem_pkt_li),
         .data_mem_pkt_v_i(data_mem_pkt_v_li),
@@ -907,6 +946,7 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
   logic [1:0] uncached_lo;
   logic [1:0][63:0] miss_data_fifo_lo;
   logic [1:0] miss_fifo_ready_lo, miss_fifo_v_li, miss_v_lo, miss_yumi_li;
+  logic transducer_ready_lo;
   for (genvar i = 0; i < 2; i++) begin : miss_fifo
     assign miss_fifo_v_li[i] = load_miss_lo[i] | store_miss_lo[i] | store_lo[i] | uncached_store_req_lo[i] | uncached_load_req_lo[i];
     wire is_store_li = store_lo[i] | uncached_store_req_lo[i];
@@ -925,7 +965,7 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
        ,.v_o(miss_v_lo[i])
        ,.yumi_i(miss_yumi_li[i])
        );
-    assign l15_ready_lo[i] = miss_fifo_ready_lo[i];
+    assign l15_ready_lo[i] = miss_fifo_ready_lo[i] & transducer_ready_lo;
   end
 
   logic        arb_miss_v_lo;
@@ -1010,6 +1050,7 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
         .clk_i                              (clk),
         .reset_i                            (~rst_n_f),
 
+        .ready_o                            (transducer_ready_lo),
         // OpenPiton Bus
         // BP -> L1.5
         .miss_v_i                           (arb_miss_v_lo),
