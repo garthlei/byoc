@@ -1,4 +1,7 @@
-#define HW_VERSION 0x0000
-#define INTR_MASK 0x0004
-#define INTR_SET 0x0008
-#define INTR_STATUS 0x000c
+#ifndef NVDLA_GLB_HEADER
+#define NVDLA_GLB_HEADER
+#define GLB_HW_VERSION 0x0000
+#define GLB_INTR_MASK 0x0004
+#define GLB_INTR_SET 0x0008
+#define GLB_INTR_STATUS 0x000c
+#endif
