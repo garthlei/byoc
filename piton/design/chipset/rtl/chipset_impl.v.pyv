@@ -1139,13 +1139,13 @@ nvlink_top  nvlink_top (
     .noc3_out_rdy            (buf_nvlink_noc3_ready   ),
 
     //Memory access signals
-    .noc2_out_val            (nvlink_buf_noc2_valid   ),
-    .noc2_out_data           (nvlink_buf_noc2_data    ),
-    .noc2_out_rdy            (buf_nvlink_noc2_ready   ),
+    .noc2_out_val            (nvlink_filter_noc2_valid   ),
+    .noc2_out_data           (nvlink_filter_noc2_data    ),
+    .noc2_out_rdy            (filter_nvlink_noc2_ready   ),
 
-    .noc3_in_val             (buf_nvlink_noc3_valid   ),
-    .noc3_in_data            (buf_nvlink_noc3_data    ),
-    .noc3_in_rdy             (nvlink_buf_noc3_ready   )
+    .noc3_in_val             (filter_nvlink_noc3_valid   ),
+    .noc3_in_data            (filter_nvlink_noc3_data    ),
+    .noc3_in_rdy             (nvlink_filter_noc3_ready   )
 
 
 );''' % (devices[i]["portnum"])
