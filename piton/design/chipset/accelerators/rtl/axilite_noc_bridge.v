@@ -215,8 +215,16 @@ localparam STORE_ACK = 1'd1;
 
  wire                         axi_b_go;
  wire                         axi_r_go;
+
+
+//Pass through signals
+    
+   assign axi_awready = splitter_bridge_rdy;
+   assign axi_arready = splitter_bridge_rdy;
+   assign axi_wready = splitter_bridge_rdy;
+   assign bridge_splitter_rdy = axi_rready| axi_bready;
+ 
    
-  
    
    
 //==============================================================================
@@ -296,7 +304,27 @@ always @ (posedge clk)
 begin
     if (rst)
     begin
-        noc2encoder_req_data_f <= 0;
+       noc2encoder_req_data_f <= 0;
+       bridge_splitter_val <= 0;
+       address <= {`C_M_AXI_LITE_ADDR_WIDTH{1'b0}};
+       dest_xpos <= {`NOC_X_WIDTH{1'b0}};
+       dest_ypos <= {`NOC_Y_WIDTH{1'b0}};
+       dest_chipid <= {`NOC_CHIPID_WIDTH{1'b0}};
+       dest_fbits  <= {`NOC_FBITS_WIDTH{1'b0}};
+       src_xpos <= {`NOC_X_WIDTH{1'b0}};
+       src_ypos <= {`NOC_Y_WIDTH{1'b0}};
+       src_chipid <= {`NOC_CHIPID_WIDTH{1'b0}};
+       src_fbits <={`NOC_FBITS_WIDTH{1'b0}};
+       msg_length <= {`MSG_LENGTH_WIDTH{1'b0}};
+       msg_type <= MSG_TYPE_INVAL;
+       msg_mshrid <={`MSG_MSHRID_WIDTH{1'b0}};
+       msg_options_1 <= 0;
+       msg_options_2 <= 0;
+       msg_options_3 <= 0;
+       msg_options_4 <= 0;
+       sending <= 1'b0;
+       noc2encoder_req_val <= 1'b0;
+       noc2encoder_req_data <= {`NOC_DATA_WIDTH{1'b0}};
     end
     else if (noc2encoder_req_val)
     begin
@@ -312,7 +340,11 @@ always @ (posedge clk)
 begin
     if (rst)
     begin
-        flit_state <= 0;
+       flit_state <= 0;
+       flit_state_next <= 0;
+       flit <= {`NOC_DATA_WIDTH{1'b0}};
+       bridge_splitter_data <= {`NOC_DATA_WIDTH{1'b0}};
+       
     end
     else
     begin
@@ -551,10 +583,21 @@ end
 
 
    wire [`NOC_DATA_WIDTH-1:0]          paddings;
-   reg  [`C_M_AXI_LITE_DATA_WIDTH-1:0] axi_rdata_tmp;
+   reg [`C_M_AXI_LITE_DATA_WIDTH-1:0]  axi_rdata_tmp;
 
-    assign paddings = 0;
-
+   assign paddings = 0;
+   
+   always @ (posedge clk)
+     begin
+	if (rst)
+	  begin
+	     axi_rdata_tmp <= {`C_M_AXI_LITE_DATA_WIDTH{1'b0}};
+	     axi_rresp <= {`C_M_AXI_LITE_RESP_WIDTH{1'b0}};
+	     axi_rvalid <= 1'b0;
+	     axi_bresp <= {`C_M_AXI_LITE_RESP_WIDTH{1'b0}};
+	     axi_bvalid <= 1'b0;
+	  end
+     end
 
     // Calculate Valid, Resp, Data signals
     always @ (*) begin

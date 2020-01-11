@@ -415,7 +415,7 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .nvdla_core2dbb_arregion           (  ),
 				   
    //General Output Signal
-   .dla_intr                           (                 )
+   .dla_intr                           ( net_interrupt )
 );
 
 //`else   // PITON_FPGA_ETHERNETLITE
