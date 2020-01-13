@@ -389,12 +389,12 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .nvdla_core2dbb_bresp              ( noc_axi_bresp   ),
     .nvdla_core2dbb_bvalid             ( noc_axi_bvalid ),
     .nvdla_core2dbb_bready             ( noc_axi_bready ),
-    .nvdla_core2dbb_bid                (  ),
+    .nvdla_core2dbb_bid                ( blank_id ),
 				   
     .nvdla_core2dbb_rvalid             ( noc_axi_rvalid ),
     .nvdla_core2dbb_rready             ( noc_axi_rready ),
-    .nvdla_core2dbb_rid                (  ),
-    .nvdla_core2dbb_rlast              (  ),
+    .nvdla_core2dbb_rid                ( blank_id ),
+    .nvdla_core2dbb_rlast              ( blank_last ),
     .nvdla_core2dbb_rdata              ( noc_axi_rdata ),
     .nvdla_core2dbb_rresp              ( noc_axi_rresp ),
 				   
