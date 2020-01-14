@@ -29,14 +29,16 @@
 //  Filename      : axi_lite_bridge.v
 //  Created On    : 2015-10-20
 //  Revision      :
-//  Author        : Xiaohua Liang & Matthew Matl
+//  Author        : Xiaohua Liang & Matthew Matl (Modified by Tigar Cyr and Chris Grimm
 //  Company       : Princeton University
 //  Email         : xiaohua@princeton.edu & mmatl@princeton.edu
 //
-//  Description   : Translate the incoming message (in the Piton Messaging
-//                  Protocol, via a val/rdy interface) to a series of AXI-Lite
+//  Description   : Translate the incoming AXI-Lite message (in the Piton Messaging
+//                  Protocol, via a val/rdy interface) to a series of NOC
 //                  requests.
 //==================================================================================================
+
+//Code is incomplete. We were not able to test the functionality of this bridge due to the inability to get NVDLA to make a memory request from the memory interface block.
 
 `include "define.tmp.h"
 `define C_M_AXI_LITE_DATA_WIDTH  `NOC_DATA_WIDTH
@@ -62,7 +64,8 @@ module axilite_noc_bridge #(
     // Clock + Reset
     input wire 					clk,
     input wire 					rst,
-
+   
+    //input for NVDLA position
     input [`NOC_CHIPID_WIDTH-1:0] 		chip_id,
     input [`NOC_X_WIDTH -1:0] 			x_id,
     input [`NOC_Y_WIDTH -1:0] 			y_id,
@@ -303,7 +306,8 @@ end
 always @ (posedge clk)
 begin
     if (rst)
-    begin
+      begin
+       //Overkill on reset in order to debug high impedence signals
        noc2encoder_req_data_f <= 0;
        bridge_splitter_val <= 0;
        address <= {`C_M_AXI_LITE_ADDR_WIDTH{1'b0}};
@@ -460,8 +464,8 @@ end
                                                              splitter_io_msg_counter_f - 1'b1  ;
 
    //--------------------------------------------------------------------------
-    // Sequential Block for Splitter FSM State
-    //--------------------------------------------------------------------------
+   // Sequential Block for Splitter FSM State
+   //--------------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
             splitter_io_msg_state_f   <= MSG_STATE_INVAL;
@@ -551,32 +555,6 @@ end
                                                                BUF_STATUS_COMP   ;
 
    
-   //always @ (posedge clk)
-   //begin
-   //    if (rst)
-   //      is_message_new <= 1'b1;
-   //    else
-   //      is_message_new <= is_message_new_next;
-   //end
-
-
-   //always @ *
-   //  begin
-
-   //     nocdecoder_dp_reqtype       = splitter_bridge_data[`MSG_TYPE];
-   //     noc_data_val = splitter_bridge_val && is_message_new;
-   //     noc_axi_data          = splitter_bridge_data[(NOCDECODER_DP_DATA_WIDTH+1)*64-1:64];
-   
-   // is_message_new is 1 on a new message, even if it's not valid yet
-   // when header ack is received, it becomes 0 until the next "new" message
-   // otherwise retain the newness value
-   //    is_message_new_next = dp_nocdecoder_ack ? 1'b1 :
-   //        dp_nocdecoder_header_ack ? 1'b0 : is_message_new;
-   //end
-
-
-
-   
 //==============================================================================
 // Send Piton Response Back to AXILITE
 //==============================================================================
@@ -636,37 +614,5 @@ end
 
     assign axi_r_go = axi_rvalid && axi_rready;
     assign axi_b_go  = axi_bvalid & axi_bready;
-
-   
-
-//always @ *
-//  begin
-
-//     case (nocdecoder_dp_reqtype)
-//     `MSG_TYPE_STORE_MEM_ACK:
-//       begin
-//	  if(axi_bready) 
-//	    axi_bresp = noc_axi_data;
-//	    axi_bvalid = noc_data_val;
-//	  else
-
-//       end
-//     `MSG_TYPE_LOAD_MEM_ACK:
-//       begin
-//	 if(axi_rready)
-//	    axi_rdata = noc_axi_data;
-//	    axi_rresp = noc_axi_data;
-//	    axi_rvalid = noc_data_val;
-//	  else
- 
-//       end
-//     default:
-//       begin
-	  
-//       end
-//   endcase
-     
-//end
-
 
 endmodule

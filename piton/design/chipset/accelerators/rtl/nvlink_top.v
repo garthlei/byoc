@@ -27,40 +27,42 @@
 
 //--------------------------------------------------
 // Description:     Top level for FPGA MAC
-// Author:          Alexey Lavrov
+// Author:          Alexey Lavrov (Modified by Tigar Cyr and Chris Grimm)
 // Company:         Princeton University
-// Created:         1/25/2017
+// Created:         1/13/2020
 //--------------------------------------------------
 
 module nvlink_top #(
     parameter AXI_ADDR_WIDTH   = 32,
     parameter AXI_DATA_WIDTH   = 32,
-    parameter AXI_USER_WIDTH   = 6,
-    parameter AXI_ID_WIDTH     = 6,
+    parameter AXI_USER_WIDTH   = 6,  //Not used
+    parameter AXI_ID_WIDTH     = 6,  //Not used
     parameter APB_ADDR_WIDTH   = 32,
     parameter APB_DATA_WIDTH   = 32,
     parameter SWAP_ENDIANESS = 1
 ) (
+   //General signal imputs
     input 			  chipset_clk,
 
     input 			  rst_n,
 
     output 			  net_interrupt,
 
+   //Inputs to identify NVDLA position
     input [`NOC_CHIPID_WIDTH-1:0] chip_id,
     input [`NOC_X_WIDTH -1:0] 	  x_id,
-    input [`NOC_Y_WIDTH -1:0]     y_id,
+    input [`NOC_Y_WIDTH -1:0] 	  y_id,
 
+   //CPU master signals for NVDLA configuration interface
     input 			  noc2_in_val,
     input [`NOC_DATA_WIDTH-1:0]   noc2_in_data,
     output 			  noc2_in_rdy,
 
     output 			  noc3_out_val,
     output [`NOC_DATA_WIDTH-1:0]  noc3_out_data,
-    input 			  noc3_out_rdy
-				  
-				  //`ifdef PITON_FPGA_NVDLA
-				  ,
+    input 			  noc3_out_rdy,
+
+   //NVDLA master signals for Memory block interface
     output 			  noc2_out_val,
     output [`NOC_DATA_WIDTH-1:0]  noc2_out_data,
     input 			  noc2_out_rdy,
@@ -68,17 +70,17 @@ module nvlink_top #(
     input 			  noc3_in_val,
     input [`NOC_DATA_WIDTH-1:0]   noc3_in_data,
     output 			  noc3_in_rdy
-//`endif
+
 
 
 );
 
-//`ifdef PITON_FPGA_NVDLA
+
 
  
 
 
-// apb <-> axi
+// axi <-> apb (Configuration signals)
 //axilite signals
 wire [31:0]                     apb_axi_awaddr;
 wire                            apb_axi_awvalid;
@@ -102,7 +104,7 @@ wire [1:0]                      apb_axi_rresp;
 wire                            apb_axi_rvalid;
 wire                            apb_axi_rready;
 
-// noc <-> axi
+// axi <-> noc (Memory Interface)
 //axilite signals
 wire [31:0]                     noc_axi_awaddr;
 wire                            noc_axi_awvalid;
@@ -159,13 +161,7 @@ wire blank_user = 6'b0;
 wire blank_qos = 4'b0;
 wire blank_last = 1'b0;
 wire blank_region = 4'b0;
-   
-
-//Test
-   //assign prdata = 32'b1110;
-   //assign pready = 1'b1;
-   //assign pslverr = 1'b0;
-   
+      
 
 //CPU -->AXILITE
 noc_axilite_bridge #(
@@ -173,15 +169,15 @@ noc_axilite_bridge #(
     .SWAP_ENDIANESS         (SWAP_ENDIANESS)
 )  noc_nvlink_bridge (
     .clk                    (chipset_clk        ),
-    .rst                    (~rst_n             ),      // TODO: rewrite to positive ?
+    .rst                    (~rst_n             ),      
 
     .splitter_bridge_val    (noc2_in_val           ),
     .splitter_bridge_data   (noc2_in_data          ),
-    .bridge_splitter_rdy    (noc2_in_rdy           ),   // CRAZY NAMING !
+    .bridge_splitter_rdy    (noc2_in_rdy           ),   
 
     .bridge_splitter_val    (noc3_out_val          ),
     .bridge_splitter_data   (noc3_out_data         ),
-    .splitter_bridge_rdy    (noc3_out_rdy          ),   // CRAZY NAMING !
+    .splitter_bridge_rdy    (noc3_out_rdy          ),   
 
     //axi lite signals
     //write address channel
@@ -249,10 +245,10 @@ axi2apb #(
             .WVALID_i   ( apb_axi_wvalid         ),
             .WREADY_o   ( apb_axi_wready         ),
 
-            .BID_o      ( b_dump_id                ),
+            .BID_o      ( b_dump_id              ),
             .BRESP_o    ( apb_axi_bresp          ),
             .BVALID_o   ( apb_axi_bvalid         ),
-            .BUSER_o    ( b_dump_user              ),
+            .BUSER_o    ( b_dump_user            ),
             .BREADY_i   ( apb_axi_bready         ),
 
             .ARID_i     ( blank_id               ),
@@ -287,9 +283,9 @@ axi2apb #(
             .PSLVERR    ( pslverr                )
         );
 
-   //`ifdef PITON_FPGA_NVDLA
    
    //AXILITE --> CPU
+   //This bridge does not fully work.
 axilite_noc_bridge #(
     .SLAVE_RESP_BYTEWIDTH   (4),
     .SWAP_ENDIANESS         (SWAP_ENDIANESS),
@@ -339,28 +335,22 @@ axilite_noc_bridge #(
     .axi_bvalid        (noc_axi_bvalid),
     .axi_bready        (noc_axi_bready)
 );
-   //`else   // PITON_FPGA_ETHERNETLITE
-
-    //assign noc2_out_val    = 1'b0;
-    //assign noc3_in_rdy    = 1'b0;
-    //assign noc2_out_data   = {`NOC_DATA_WIDTH{1'b0}};
 
 
 
-//`endif  // PITON_FPGA_ETHERNETLITE
 
-//`ifdef PITON_FPGA_NVDLA
+
 //APB -->NVDLA
 NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .dla_core_clk   (chipset_clk        ),
-    .dla_csb_clk    (chipset_clk        ),      // TODO: rewrite to positive ?
+    .dla_csb_clk    (chipset_clk        ),      
     .dla_reset_rstn ( rst_n             ),
     .direct_reset   (~rst_n             ),
 
     //apb signals
     .psel           (psel                  ),
     .penable        (penable               ),
-    .pwrite         (pwrite                ),   // CRAZY NAMING !
+    .pwrite         (pwrite                ),   
     .paddr          (paddr                 ),
     .pwdata         (pwdata                ),
     .prdata         (prdata                ),
@@ -368,6 +358,7 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
     .pslverr        (pslverr               ),
 
     //axi signals
+    // Unsigned signals not needed.
     .nvdla_core2dbb_awvalid            ( noc_axi_awvalid ),
     .nvdla_core2dbb_awready            ( noc_axi_awready ), 
     .nvdla_core2dbb_awid               (  ),
@@ -418,14 +409,6 @@ NV_NVDLA_wrapper  NV_NVDLA_nvlink (
    .dla_intr                           ( net_interrupt )
 );
 
-//`else   // PITON_FPGA_ETHERNETLITE
 
-//    assign noc2_in_rdy    = 1'b0;
-//    assign noc3_out_val    = 1'b0;
-//    assign noc3_out_data   = {`NOC_DATA_WIDTH{1'b0}};
-
-
-
-//`endif  // PITON_FPGA_ETHERNETLITE
 
 endmodule

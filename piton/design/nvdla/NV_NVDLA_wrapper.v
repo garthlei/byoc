@@ -1,4 +1,5 @@
 // File Name: NV_NVDLA_wrapper.v
+// File obtained from github.com/sld-columbia/nvdla-hw
 
 module NV_NVDLA_wrapper
   (
@@ -57,12 +58,15 @@ module NV_NVDLA_wrapper
    dla_intr
    );
 
+   
    ////////////////////////////////////////////////////////////////////////////////
+   //Clocks and general signals
    input dla_core_clk;
    input dla_csb_clk;
    input dla_reset_rstn;
    input direct_reset;
-   //apb
+   
+   //apb for configuration interface block
    input psel;
    input penable;
    input pwrite;
@@ -72,6 +76,7 @@ module NV_NVDLA_wrapper
    output pready;
    output pslverr;
    ///////////////
+   //Axi for memory interface block
    output wire 		 nvdla_core2dbb_awvalid;
    input wire 		 nvdla_core2dbb_awready;
    output wire [7:0] 	 nvdla_core2dbb_awid;
@@ -113,6 +118,7 @@ module NV_NVDLA_wrapper
    output wire [3:0] 	  nvdla_core2dbb_arqos;
    output wire [3:0] 	  nvdla_core2dbb_arregion;
    ///////////////
+   //Interrupt output is not used
    output 		  dla_intr;
    ////////////////////////////////////////////////////////////////////////////////
 
@@ -125,6 +131,7 @@ module NV_NVDLA_wrapper
    wire 		  csb2nvdla_nposted;
    wire 		  nvdla2csb_valid;
    wire [31:0] 		  nvdla2csb_data;
+   
    // NVDLA ports not used
    wire 		  global_clk_ovr_on;
    wire 		  tmc2slcg_disable_clock_gating;
@@ -221,6 +228,7 @@ module NV_NVDLA_wrapper
       ,.nvdla_pwrbus_ram_a_pd(nvdla_pwrbus_ram_a_pd) //|< i
       );
 
+   //Converts apb to csb for configuration interface
    NV_NVDLA_apb2csb apb2csb_0
      (
       .pclk(dla_csb_clk)
