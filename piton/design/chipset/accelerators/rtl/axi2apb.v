@@ -12,6 +12,9 @@
 // Igor Loi <igor.loi@unibo.it>
 // Davide Rossi <davide.rossi@unibo.it>
 // Florian Zaruba <zarubaf@iis.ee.ethz.ch>
+// Modified by: Tigar Cyr and Chris Grimm
+
+//Unused code as an existing axi2apb model was discovered under the Ariane Core files.
 
 `define OKAY   2'b00
 `define EXOKAY 2'b01
