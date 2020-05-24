@@ -2221,7 +2221,7 @@ sub assemble_diag
     }
 
     if ($opt{blackparrot} and $opt{precompiled}) {
-      push @{$opt{asm_diag_root}}, "$ENV{HOME}/BlackParrot/black-parrot/bp_common/test/mem/";
+      push @{$opt{asm_diag_root}}, "$ENV{DV_ROOT}/piton/design/chip/tile/blackparrot/bp_common/test/mem/";
     }
 
     # find diagnostic
