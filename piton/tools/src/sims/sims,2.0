@@ -355,7 +355,7 @@ die ("DIE. -pico and -pico_het cannot both be set") if ($opt{pico} && $opt{pico_
 
 # Setting ost1 by default. This works better than default to 1
 # for heterogeneous-ISA stuff
-if (!$opt{pico} && !$opt{ariane}) {
+if (!$opt{pico} && !$opt{ariane} && !$opt{blackparrot}) {
   $opt{ost1} = 1 ;
 }
 
@@ -1140,7 +1140,7 @@ sub gen_flist
       $line =~ s/^\s*(.*?)\s*$/$1/ ;
       $line .= "\n" ;
 
-      if (($line =~ /^\s*\/\//) or ($line =~ /^\s*$/)) {
+      if (($line =~ /^\s*\/\//) or ($line =~ /^\s*$/) or ($line =~ /^\s*#/)) {
         next ;
       }
 
@@ -2221,7 +2221,7 @@ sub assemble_diag
     }
 
     if ($opt{blackparrot} and $opt{precompiled}) {
-      push @{$opt{asm_diag_root}}, "$ENV{HOME}/scratch/pre-alpha-release/bp_common/test/mem/";
+      push @{$opt{asm_diag_root}}, "$ENV{DV_ROOT}/piton/design/chip/tile/blackparrot/bp_common/test/mem/";
     }
 
     # find diagnostic
@@ -2230,9 +2230,9 @@ sub assemble_diag
     my $diag_name ;
     if ($opt{asm_diag_name} =~ /\.pal/)        { $diag_name = "diag.pal"  ; }
     elsif ($opt{asm_diag_name} =~ /\.s\.gz/)   { $diag_name = "diag.s.gz" ; }
-    elsif ($opt{precompiled} and ($opt{ariane} | $opt{blackparrot})) { $diag_name = "diag.exe"  ; }
-    elsif (($opt{pico} | $opt{ariane} | $opt{blackparrot}) and ($opt{asm_diag_name} =~ /\.S/)) { $diag_name = "diag.S" ; }
-    elsif (($opt{pico} | $opt{ariane} | $opt{blackparrot}) and ($opt{asm_diag_name} =~ /\.c/)) { $diag_name = "diag.c" ; }
+    elsif ($opt{precompiled} and ($opt{rv32} | $opt{rv64})) { $diag_name = "diag.exe"  ; }
+    elsif (($opt{rv32} | $opt{rv64}) and ($opt{asm_diag_name} =~ /\.S/)) { $diag_name = "diag.S" ; }
+    elsif (($opt{rv32} | $opt{rv64}) and ($opt{asm_diag_name} =~ /\.c/)) { $diag_name = "diag.c" ; }
     else { $diag_name = "diag.s" ; }
 
     # copy diagnostic to run area
@@ -2737,7 +2737,7 @@ sub parse_args
   }
 
   # in case a precompiled riscv binary for ariane is directly specified
-  if ($opt{precompiled} and ($opt{ariane} | $opt{blackparrot})) {
+  if ($opt{precompiled} and ($opt{rv32} | $opt{rv64})) {
     if (!($opt{asm_diag_name} =~ /\.riscv/)) {
         $opt{asm_diag_name} = fileparse($opt{asm_diag_name}, qr/\.[^.]*/);
     }
@@ -2846,9 +2846,9 @@ sub parse_args
     $pton_y_tiles=$opt{y_tiles};
     $pton_num_tiles=($opt{x_tiles} * $opt{y_tiles});
   } else {
-    print "x_tiles and y_tiles not defined, assuming x dimension is <= 8\n" ;
+    print "$prg: x_tiles and y_tiles not defined, assuming x dimension is <= 8\n" ;
     if (! $opt{num_tile}) {
-        print "num_tile not defined, assuming just one tile\n" ;
+        print "$prg: num_tile not defined, assuming just one tile\n" ;
         $opt{num_tile} = 1;
     }
 

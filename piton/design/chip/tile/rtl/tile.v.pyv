@@ -827,289 +827,54 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
     //////////////////////
     // BlackParrot Core //
     //////////////////////
-    logic isync_lo, dsync_lo;
+    bp_piton_top
+      proc
+      (.clk_i                               (clk_gated)
+      ,.reset_i                             (~rst_n_f)
 
-    logic [1:0] l15_ready_lo;
-    logic [1:0] load_miss_lo;
-    logic [1:0] store_miss_lo;
-    logic [1:0][39:0] miss_addr_lo;
-    logic [1:0] store_lo;
-    logic [1:0][63:0] store_data_lo;
-    logic [1:0][1:0] size_op_lo;
-    logic [1:0][2:0] lru_way_lo;
-    logic [1:0] uncached_load_req_lo;
-    logic [1:0] uncached_store_req_lo;
-    logic [1:0][522:0] data_mem_pkt_li;
-    logic [1:0] data_mem_pkt_v_li, data_mem_pkt_yumi_lo;
-    logic [1:0][41:0] tag_mem_pkt_li;
-    logic [1:0] tag_mem_pkt_v_li, tag_mem_pkt_yumi_lo;
-    logic [1:0][10:0] stat_mem_pkt_li;
-    logic [1:0] stat_mem_pkt_v_li, stat_mem_pkt_yumi_lo;
+      ,.transducer_l15_rqtype               (transducer_l15_rqtype)
+      ,.transducer_l15_nc                   (transducer_l15_nc)
+      ,.transducer_l15_size                 (transducer_l15_size)
+      ,.transducer_l15_val                  (transducer_l15_val)
+      ,.transducer_l15_address              (transducer_l15_address)
+      ,.transducer_l15_data                 (transducer_l15_data)
+      ,.transducer_l15_l1rplway             (transducer_l15_l1rplway)
+      ,.transducer_l15_threadid             (transducer_l15_threadid)
+      ,.transducer_l15_amo_op               (transducer_l15_amo_op)
+      ,.transducer_l15_prefetch             (transducer_l15_prefetch)
+      ,.transducer_l15_invalidate_cacheline (transducer_l15_invalidate_cacheline)
+      ,.transducer_l15_blockstore           (transducer_l15_blockstore)
+      ,.transducer_l15_blockinitstore       (transducer_l15_blockinitstore)
+      ,.transducer_l15_data_next_entry      (transducer_l15_data_next_entry)
+      ,.transducer_l15_csm_data             (transducer_l15_csm_data)
+      ,.l15_transducer_ack                  (l15_transducer_ack)
 
-    typedef enum logic {
-      e_lce_mode_uncached
-      ,e_lce_mode_normal
-    } bp_lce_mode_e;
-
-    typedef enum bit
-    {
-      e_cce_mode_uncached = 1'b0
-      ,e_cce_mode_normal  = 1'b1
-    } bp_cce_mode_e;
-
-    localparam dword_width_p = 64;
-    localparam csr_addr_width_p = 12;
-    localparam instr_width_p = 32;
-    localparam reg_addr_width_p = 5;
-
-//`define declare_bp_cfg_bus_s(vaddr_width_mp, core_id_width_mp, cce_id_width_mp, lce_id_width_mp, cce_pc_width_mp, cce_instr_width_mp)
-    `declare_bp_cfg_bus_s(39, 1, 4, 4, 8, 48);
-    bp_cfg_bus_s cfg_bus_li;
-
-    assign cfg_bus_li = '{freeze: 1'b0
-                          ,icache_mode: e_lce_mode_normal
-                          ,dcache_mode: e_lce_mode_normal
-                          ,default: '0
-                          };
-
-  logic [1:0] miss_fifo_ready_lo, miss_fifo_v_li, miss_v_lo, miss_yumi_li;
-    bp_core_minimal proc (
-        .clk_i                             (clk_gated),
-        .reset_i                           (~rst_n_f),
-
-        // Configuration
-        //
-        .cfg_bus_i(cfg_bus_li),
-        .cfg_npc_data_o(),
-        .cfg_irf_data_o(),
-        .cfg_csr_data_o(),
-        .cfg_priv_data_o(),
-
-        // Miss interface
-        //
-        .lce_ready_i(l15_ready_lo),
-        .lce_miss_i(load_miss_lo | store_miss_lo | miss_v_lo),
-        .credits_full_i(1'b0),
-        .credits_empty_i(1'b1),
-
-        .load_miss_o(load_miss_lo),
-        .store_miss_o(store_miss_lo),
-        .lr_miss_o(),
-        .lr_hit_o(),
-
-        .cache_v_o(),
-        .uncached_load_req_o(uncached_load_req_lo),
-        .uncached_store_req_o(uncached_store_req_lo),
-        
-        .miss_addr_o(miss_addr_lo),
-        .lru_way_o(lru_way_lo),
-
-        // Writethrough interface
-        .store_o(store_lo),
-        .store_data_o(store_data_lo),
-        .size_op_o(size_op_lo),
-
-        // Unused
-        .dirty_o(),
-
-        // Writeback interface
-        //
-        .data_mem_data_o(),
-
-        // Uncached interface
-        //
-
-        // Timer
-        .timer_irq_i('0),
-        .software_irq_i('0),
-        .external_irq_i('0),
-        
-        .data_mem_pkt_i(data_mem_pkt_li),
-        .data_mem_pkt_v_i(data_mem_pkt_v_li),
-        .data_mem_pkt_yumi_o(data_mem_pkt_yumi_lo),
-
-        .tag_mem_pkt_i(tag_mem_pkt_li),
-        .tag_mem_pkt_v_i(tag_mem_pkt_v_li),
-        .tag_mem_pkt_yumi_o(tag_mem_pkt_yumi_lo),
-
-        .stat_mem_pkt_i(stat_mem_pkt_li),
-        .stat_mem_pkt_v_i(stat_mem_pkt_v_li),
-        .stat_mem_pkt_yumi_o(stat_mem_pkt_yumi_lo)
-   );
-
-    pico_reset pico_reset(
-        .gclk(clk_gated),
-        .rst_n(rst_n_f),
-        .spc_grst_l(spc_grst_l)
-    );
-
-  logic [1:0][39:0] miss_addr_fifo_lo;
-  logic [1:0][1:0] miss_size_op_lo;
-  logic [1:0][2:0] miss_lru_lo;
-  logic [1:0] is_store_lo;
-  logic [1:0] uncached_lo;
-  logic [1:0][63:0] miss_data_fifo_lo;
-  logic transducer_ready_lo;
-  for (genvar i = 0; i < 2; i++) begin : miss_fifo
-    assign miss_fifo_v_li[i] = load_miss_lo[i] | store_miss_lo[i] | store_lo[i] | uncached_store_req_lo[i] | uncached_load_req_lo[i];
-    wire is_store_li = store_lo[i] | uncached_store_req_lo[i];
-    wire uncached_li = uncached_store_req_lo[i] | uncached_load_req_lo[i];
-    bsg_one_fifo
-     #(.width_p(40+3+1+1+2+64))
-     miss_fifo
-      (.clk_i(clk)
-       ,.reset_i(~rst_n_f)
-
-       ,.data_i({uncached_li, is_store_li, lru_way_lo[i], size_op_lo[i], miss_addr_lo[i], store_data_lo[i]})
-       ,.v_i(miss_fifo_v_li[i])
-       ,.ready_o(miss_fifo_ready_lo[i])
-
-       ,.data_o({uncached_lo[i], is_store_lo[i], miss_lru_lo[i], miss_size_op_lo[i], miss_addr_fifo_lo[i], miss_data_fifo_lo[i]})
-       ,.v_o(miss_v_lo[i])
-       ,.yumi_i(miss_yumi_li[i])
-       );
-    assign l15_ready_lo[i] = (miss_fifo_ready_lo[i] & transducer_ready_lo);
-  end
-
-  logic        arb_miss_v_lo;
-  logic        arb_miss_yumi_li;
-  logic        arb_uncached_lo;
-  logic [39:0] arb_miss_addr_lo;
-  logic [2:0]  arb_miss_lru_lo;
-  logic        arb_is_store_lo;
-  logic [63:0] arb_miss_data_lo;
-  logic [1:0]  arb_miss_size_lo;
-  
-  logic [522:0] arb_data_mem_pkt_li;
-  logic arb_data_mem_pkt_v_li, arb_data_mem_pkt_yumi_lo;
-  logic [41:0] arb_tag_mem_pkt_li;
-  logic arb_tag_mem_pkt_v_li, arb_tag_mem_pkt_yumi_lo;
-  logic [10:0] arb_stat_mem_pkt_li;
-  logic arb_stat_mem_pkt_v_li, arb_stat_mem_pkt_yumi_lo;
-
-  // Fixme: Won't work if dcache requests while icache is being serviced
-  always_comb begin
-    if (miss_v_lo[1] | dsync_lo) begin
-      arb_miss_v_lo = miss_v_lo[1];
-      arb_uncached_lo = uncached_lo[1];
-      arb_miss_addr_lo = miss_addr_fifo_lo[1];
-      arb_miss_lru_lo = miss_lru_lo[1];
-      arb_is_store_lo = is_store_lo[1];
-      arb_miss_data_lo = miss_data_fifo_lo[1];
-      arb_miss_size_lo = miss_size_op_lo[1];
-
-      miss_yumi_li[0] = '0;
-      miss_yumi_li[1] = arb_miss_yumi_li;
-
-      data_mem_pkt_li[0] = '0;
-      data_mem_pkt_v_li[0] = '0;
-      data_mem_pkt_li[1] = arb_data_mem_pkt_li;
-      data_mem_pkt_v_li[1] = arb_data_mem_pkt_v_li;
-      arb_data_mem_pkt_yumi_lo = data_mem_pkt_yumi_lo[1];
-
-      tag_mem_pkt_li[0] = '0;
-      tag_mem_pkt_v_li[0] = '0;
-      tag_mem_pkt_li[1] = arb_tag_mem_pkt_li;
-      tag_mem_pkt_v_li[1] = arb_tag_mem_pkt_v_li;
-      arb_tag_mem_pkt_yumi_lo = tag_mem_pkt_yumi_lo[1];
-
-      stat_mem_pkt_li[0] = '0;
-      stat_mem_pkt_v_li[0] = '0;
-      stat_mem_pkt_li[1] = arb_stat_mem_pkt_li;
-      stat_mem_pkt_v_li[1] = arb_stat_mem_pkt_v_li;
-      arb_stat_mem_pkt_yumi_lo = stat_mem_pkt_yumi_lo[1];
-
-    end else begin
-      arb_miss_v_lo = miss_v_lo[0];
-      arb_uncached_lo = uncached_lo[0];
-      arb_miss_addr_lo = miss_addr_fifo_lo[0];
-      arb_miss_lru_lo = miss_lru_lo[0];
-      arb_is_store_lo = is_store_lo[0];
-      arb_miss_data_lo = miss_data_fifo_lo[0];
-      arb_miss_size_lo = miss_size_op_lo[0];
-
-      miss_yumi_li[0] = arb_miss_yumi_li;
-      miss_yumi_li[1] = '0;
-
-      data_mem_pkt_li[0] = arb_data_mem_pkt_li;
-      data_mem_pkt_v_li[0] = arb_data_mem_pkt_v_li;
-      arb_data_mem_pkt_yumi_lo = data_mem_pkt_yumi_lo[0];
-      data_mem_pkt_li[1] = '0;
-      data_mem_pkt_v_li[1] = '0;
-
-      tag_mem_pkt_li[0] = arb_tag_mem_pkt_li;
-      tag_mem_pkt_v_li[0] = arb_tag_mem_pkt_v_li;
-      arb_tag_mem_pkt_yumi_lo = tag_mem_pkt_yumi_lo[0];
-      tag_mem_pkt_li[1] = '0;
-      tag_mem_pkt_v_li[1] = '0;
-
-      stat_mem_pkt_li[0] = arb_stat_mem_pkt_li;
-      stat_mem_pkt_v_li[0] = arb_stat_mem_pkt_v_li;
-      arb_stat_mem_pkt_yumi_lo = stat_mem_pkt_yumi_lo[0];
-      stat_mem_pkt_li[1] = '0;
-      stat_mem_pkt_v_li[1] = '0;
+      ,.l15_transducer_val                  (l15_transducer_val)
+      ,.l15_transducer_returntype           (l15_transducer_returntype)
+      ,.l15_transducer_data_0               (l15_transducer_data_0)
+      ,.l15_transducer_data_1               (l15_transducer_data_1)
+      ,.l15_transducer_data_2               (l15_transducer_data_2)
+      ,.l15_transducer_data_3               (l15_transducer_data_3)
+      ,.l15_transducer_noncacheable         (l15_transducer_noncacheable)
+      ,.l15_transducer_threadid             (l15_transducer_threadid)
+      ,.l15_transducer_inval_address_15_4   (l15_transducer_inval_address_15_4)
+      ,.l15_transducer_inval_icache_inval   (l15_transducer_inval_icache_inval)
+      ,.l15_transducer_inval_dcache_inval   (l15_transducer_inval_dcache_inval)
+      ,.l15_transducer_inval_icache_all_way (l15_transducer_inval_icache_all_way)
+      ,.l15_transducer_inval_dcache_all_way (l15_transducer_inval_dcache_all_way)
+      ,.l15_transducer_inval_way            (l15_transducer_inval_way)
+      ,.transducer_l15_req_ack              (transducer_l15_req_ack)
+      );
+    
+    // Reset the L1.5. This must be flopped 4 cycles after rst_n_f 
+    logic reset_r, reset_rr, reset_rrr, reset_rrrr;
+    always_ff @(posedge clk_gated) begin
+      reset_r <= rst_n_f;
+      reset_rr <= reset_r;
+      reset_rrr <= reset_rr;
+      reset_rrrr <= reset_rrr;
     end
-  end
-
-    bp_l15_transducer bp_l15_transducer(
-        .clk_i                              (clk),
-        .reset_i                            (~rst_n_f),
-
-        .isync_o                            (isync_lo),
-        .dsync_o                            (dsync_lo),
-        .ready_o                            (transducer_ready_lo),
-        // OpenPiton Bus
-        // BP -> L1.5
-        .miss_v_i                           (arb_miss_v_lo),
-        .miss_yumi_o                        (arb_miss_yumi_li),
-        .uncached_i                         (arb_uncached_lo),
-        .miss_addr_i                        (arb_miss_addr_lo),
-        .lru_way_i                          (arb_miss_lru_lo),
-        .store_i                            (arb_is_store_lo),
-        .store_data_i                       (arb_miss_data_lo),
-        .size_op_i                          (arb_miss_size_lo),
-
-        // L1.5 -> BP
-        .l15_transducer_ack                 (l15_transducer_ack),
-        .l15_transducer_header_ack          (l15_transducer_header_ack),
-
-        .transducer_l15_rqtype              (transducer_l15_rqtype),
-        .transducer_l15_amo_op              (transducer_l15_amo_op),
-        .transducer_l15_size                (transducer_l15_size),
-        .transducer_l15_val                 (transducer_l15_val),
-        .transducer_l15_address             (transducer_l15_address),
-        .transducer_l15_data                (transducer_l15_data),
-
-        .transducer_l15_nc                  (transducer_l15_nc),
-        .transducer_l15_threadid            (transducer_l15_threadid),
-        .transducer_l15_prefetch            (transducer_l15_prefetch),
-        .transducer_l15_blockstore          (transducer_l15_blockstore),
-        .transducer_l15_blockinitstore      (transducer_l15_blockinitstore),
-        .transducer_l15_l1rplway            (transducer_l15_l1rplway),
-        .transducer_l15_invalidate_cacheline(transducer_l15_invalidate_cacheline),
-        .transducer_l15_csm_data            (transducer_l15_csm_data),
-        .transducer_l15_data_next_entry     (transducer_l15_data_next_entry),
-
-        .l15_transducer_val                 (l15_transducer_val),
-        .l15_transducer_returntype          (l15_transducer_returntype),
-
-        .l15_transducer_data_0              (l15_transducer_data_0),
-        .l15_transducer_data_1              (l15_transducer_data_1),
-
-        .transducer_l15_req_ack             (transducer_l15_req_ack),
-
-        .data_mem_pkt_o                     (arb_data_mem_pkt_li),
-        .data_mem_pkt_v_o                   (arb_data_mem_pkt_v_li),
-        .data_mem_pkt_yumi_i                (arb_data_mem_pkt_yumi_lo),
-
-        .tag_mem_pkt_o                      (arb_tag_mem_pkt_li),
-        .tag_mem_pkt_v_o                    (arb_tag_mem_pkt_v_li),
-        .tag_mem_pkt_yumi_i                 (arb_tag_mem_pkt_yumi_lo),
-
-        .stat_mem_pkt_o                     (arb_stat_mem_pkt_li),
-        .stat_mem_pkt_v_o                   (arb_stat_mem_pkt_v_li),
-        .stat_mem_pkt_yumi_i                (arb_stat_mem_pkt_yumi_lo)
-    );
+    assign spc_grst_l = reset_rrrr;
 
 end
 endgenerate

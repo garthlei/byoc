@@ -6,5 +6,5 @@
 	url = https://github.com/PrincetonUniversity/openpiton-aws.git
 [submodule "piton/design/chip/tile/blackparrot"]
 	path = piton/design/chip/tile/blackparrot
-	url = https://github.com/black-parrot/pre-alpha-release.git
-	branch = top_dev_project_hierarcoherent
+	url = https://github.com/black-parrot/black-parrot.git
+	branch = parrotpiton

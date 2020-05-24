@@ -1079,8 +1079,8 @@ ciop_fake_iob ciop_fake_iob(
           .pc_w0             ( `ARIANE_CORE0.piton_pc[48:0] ),
         `endif
         `ifdef RTL_BLACKPARROT0
-          .spc0_inst_done    ( `BLACKPARROT_CORE0.be.be_checker.director.commit_pkt.instret ),
-          .pc_w0             ( `BLACKPARROT_CORE0.be.be_checker.director.commit_pkt.pc      ),
+          .spc0_inst_done    ( `BLACKPARROT_CORE0.core.be.be_checker.director.commit_pkt.instret ),
+          .pc_w0             ( `BLACKPARROT_CORE0.core.be.be_checker.director.commit_pkt.pc      ),
         `endif
         '''
 
