@@ -355,7 +355,7 @@ die ("DIE. -pico and -pico_het cannot both be set") if ($opt{pico} && $opt{pico_
 
 # Setting ost1 by default. This works better than default to 1
 # for heterogeneous-ISA stuff
-if (!$opt{pico} && !$opt{ariane}) {
+if (!$opt{pico} && !$opt{ariane} && !$opt{blackparrot}) {
   $opt{ost1} = 1 ;
 }
 
@@ -1140,7 +1140,7 @@ sub gen_flist
       $line =~ s/^\s*(.*?)\s*$/$1/ ;
       $line .= "\n" ;
 
-      if (($line =~ /^\s*\/\//) or ($line =~ /^\s*$/)) {
+      if (($line =~ /^\s*\/\//) or ($line =~ /^\s*$/) or ($line =~ /^\s*#/)) {
         next ;
       }
 
@@ -2221,7 +2221,7 @@ sub assemble_diag
     }
 
     if ($opt{blackparrot} and $opt{precompiled}) {
-      push @{$opt{asm_diag_root}}, "$ENV{HOME}/scratch/pre-alpha-release/bp_common/test/mem/";
+      push @{$opt{asm_diag_root}}, "$ENV{HOME}/BlackParrot/black-parrot/bp_common/test/mem/";
     }
 
     # find diagnostic
