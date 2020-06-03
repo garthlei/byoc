@@ -62,38 +62,38 @@ else
   # not all tools are required at the moment
   ci/make-tmp.sh
   ci/build-riscv-gcc.sh
-  ci/install-fesvr.sh
+  # ci/install-fesvr.sh
   # ci/build-riscv-tests.sh
   # ci/install-dtc.sh
-  ci/install-spike.sh
+  # ci/install-spike.sh
   # ci/get-torture.sh
-  ci/install-verilator.sh
+  # ci/install-verilator.sh
 
   # build the RISCV tests if necessary
-  VERSION="7cc76ea83b4f827596158c8ba0763e93da65de8f"
-  cd tmp
+  # VERSION="7cc76ea83b4f827596158c8ba0763e93da65de8f"
+  # cd tmp
 
-  [ -d riscv-tests ] || git clone https://github.com/riscv/riscv-tests.git
-  cd riscv-tests
-  git checkout $VERSION
-  git submodule update --init --recursive
-  autoconf
-  mkdir -p build
+  # [ -d riscv-tests ] || git clone https://github.com/riscv/riscv-tests.git
+  # cd riscv-tests
+  # git checkout $VERSION
+  # git submodule update --init --recursive
+  # autoconf
+  # mkdir -p build
 
   # link in adapted syscalls.c such that the benchmarks can be used in the OpenPiton TB
-  cd benchmarks/common/
-  rm syscalls.c util.h
-  ln -s ${PITON_ROOT}/piton/verif/diag/assembly/include/riscv/ariane/syscalls.c
-  ln -s ${PITON_ROOT}/piton/verif/diag/assembly/include/riscv/ariane/util.h
-  cd -
+  # cd benchmarks/common/
+  # rm syscalls.c util.h
+  # ln -s ${PITON_ROOT}/piton/verif/diag/assembly/include/riscv/ariane/syscalls.c
+  # ln -s ${PITON_ROOT}/piton/verif/diag/assembly/include/riscv/ariane/util.h
+  # cd -
 
-  cd build
-  ../configure --prefix=$ROOT/tmp/riscv-tests/build
+  # cd build
+  # ../configure --prefix=$ROOT/tmp/riscv-tests/build
 
-  make clean
-  make isa        -j${NUM_JOBS} > /dev/null
-  make benchmarks -j${NUM_JOBS} > /dev/null
-  make install
+  # make clean
+  # make isa        -j${NUM_JOBS} > /dev/null
+  # make benchmarks -j${NUM_JOBS} > /dev/null
+  # make install
   cd ${PITON_ROOT}
 
   echo

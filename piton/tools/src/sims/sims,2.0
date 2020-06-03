@@ -2323,7 +2323,7 @@ sub assemble_diag
           $ENV{RV64_MARCH} = "rv64imafdc" ;
         }
         if ($opt{blackparrot}) {
-          $ENV{RV64_MARCH} = "rv64ia" ;
+          $ENV{RV64_MARCH} = "rv64ima" ;
         }
       } else {
         $ENV{RV64_MARCH} = $opt{rv64_march} ;

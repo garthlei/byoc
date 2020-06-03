@@ -1089,7 +1089,9 @@ ciop_fake_iob ciop_fake_iob(
             text2 = text;
             text2 = text2.replace("PICO_CORE0", "PICO_CORE" + repr(i));
             text2 = text2.replace("ARIANE_CORE0", "ARIANE_CORE" + repr(i));
+            text2 = text2.replace("BLACKPARROT_CORE0", "BLACKPARROT_CORE" + repr(i));
             text2 = text2.replace("RTL_ARIANE0", "RTL_ARIANE" + repr(i));
+            text2 = text2.replace("RTL_BLACKPARROT0", "RTL_BLACKPARROT" + repr(i));
             text2 = text2.replace("RTL_SPARC0", "RTL_SPARC" + repr(i));
             text2 = text2.replace("RTL_PICO0", "RTL_PICO" + repr(i));
             text2 = text2.replace("spc0_inst_done", "spc" + repr(i) + "_inst_done");
