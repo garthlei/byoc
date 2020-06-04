@@ -263,7 +263,7 @@ module chipset_impl(
     output                                      net_phy_mdc
 `endif // PITON_FPGA_ETHERNETLITE
 `endif // endif PITONSYS_IO_CTRL
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64
     ,
     // Debug
     output                                      ndmreset_o,    // non-debug module reset
@@ -1015,7 +1015,7 @@ uart_top        uart_top (
 `ifdef PITON_FPGA_ETHERNETLITE
 
     eth_top #(
-    `ifdef PITON_ARIANE
+    `ifdef PITON_RV64
       .SWAP_ENDIANESS(1)
     `else
       .SWAP_ENDIANESS(0)
