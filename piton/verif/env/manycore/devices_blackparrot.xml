@@ -42,13 +42,13 @@ Description: Peripheral address map for OpenPiton+BlackParrot configurations.
     <!--Lengths kept the same as ariane but can be changed -->
     <port>
         <!-- core local interrupt controller with real-time counter. this is shared among all cores -->
-        <name>blackparrot_clint</name>
+        <name>ariane_clint</name>
         <base>0x0000300000</base>
         <length>0xc0000</length>
     </port>
     <!-- platform level interrupt controller -->
     <port>
-        <name>blackparrot_plic</name>
+        <name>ariane_plic</name>
         <base>0x0000400000</base>
         <length>0x4000000</length>
     </port>

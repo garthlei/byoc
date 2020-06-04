@@ -1121,11 +1121,13 @@ fake_uart fake_uart (
 `endif // endif PITONSYS_IOCTRL
 
 
+// BlackParrot also uses this peripheral module to connect to Ariane CLINT and PLIC
+
 /////////////////////////////
 // Ariane-Specific Chipset //
 /////////////////////////////
 
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64
 
     wire [1:0] irq_sources, irq_le;
     // 0:level 1:edge
