@@ -80,7 +80,7 @@ else
   autoconf
   mkdir -p build
 
-  link in adapted syscalls.c such that the benchmarks can be used in the OpenPiton TB
+  # link in adapted syscalls.c such that the benchmarks can be used in the OpenPiton TB
   cd benchmarks/common/
   rm syscalls.c util.h
   ln -s ${PITON_ROOT}/piton/verif/diag/assembly/include/riscv/ariane/syscalls.c
