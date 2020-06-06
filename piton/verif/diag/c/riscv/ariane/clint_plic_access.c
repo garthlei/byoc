@@ -18,8 +18,8 @@
 
 #define NHARTS       1
 #define PLIC_SOURCES 2
-#define CLINT_BASE   0xfff1020000ULL
-#define PLIC_BASE    0xfff1030000ULL
+#define CLINT_BASE   0x0000300000ULL
+#define PLIC_BASE    0x0000400000ULL
 
 int main(int argc, char ** argv) {
 

@@ -193,13 +193,13 @@ def calcUARTLatch(design_data, board):
 # Name:     isTranslatorOK
 # Input:    addr_data_map   -   addr:data map for a test to check
 #           flog            -   file descriptor for loggin
-#           ariane          -   if true, this will only consider the first
+#           rv64            -   if true, this will only consider the first
 #                               entry. if flase, the first entry will be skipped
 # Output:   True
 # Description: Tests if $DV_ROOT/chipset/rtl/storage_addr_trans.tmp.v
 #              can be used for mapping of addr:map address
 ############################################################################
-def isTranslatorOK(addr_data_map, flog, ariane):
+def isTranslatorOK(addr_data_map, flog, rv64):
     map_loc = DV_ROOT + "/design/chipset/rtl/storage_addr_trans_unified.tmp.v"
     fname = os.path.join(map_loc)
     f = open(fname, 'r')
@@ -209,7 +209,7 @@ def isTranslatorOK(addr_data_map, flog, ariane):
     for line in f:
         m = re.search(r"in_section.*>=\s+64'h([0-9a-fA-F]+).*<\s+64'h([0-9a-fA-F]+)", line)
         if m != None:
-            if ariane:
+            if rv64:
                 if cnt == 0:
                     trans_sections.append((int(m.group(1), 16), int(m.group(2), 16)))
             else:
@@ -273,6 +273,9 @@ def runMidas(tname, uart_div_latch, flog, midas_args=None, coreType="sparc", pre
     if coreType == "ariane":
         # specify uart_dmw in order to include load instructions for PASS/FAIL
         cmd += " -ariane -uart_dmw -x_tiles=%d -y_tiles=%d" % (int(x_tiles), int(y_tiles))
+    elif coreType == "blackparrot":
+        # specify uart_dmw in order to include load instructions for PASS/FAIL
+        cmd += " -blackparrot -uart_dmw -x_tiles=%d -y_tiles=%d" % (int(x_tiles), int(y_tiles))
     elif coreType == "sparc":
         # nothing to add at the moment
         pass

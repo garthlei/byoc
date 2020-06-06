@@ -200,6 +200,7 @@ Getopt::Long::Configure ('no_auto_abbrev') ;
         'rv64_mabi=s' => "",
         'rv64_march=s' => "",
         'rv64_target_triple=s' => "",
+        'rv64_platform' => 0,
         'other_sim_build' => 0,
         'sim_build_args' => [],
         'other_sim_build_cmd' => "",
@@ -1274,18 +1275,18 @@ sub pre_build
 
   system("cp -f flist $cur_dir");
 
-  if($opt{ariane}) {
-    print "compiling DTS and bootroms for Ariane...\n";
+  if($opt{rv64_platform}) {
+    print "compiling DTS and bootroms for rv64 platform...\n";
     !system("cd $ENV{ARIANE_ROOT}/openpiton/bootrom/baremetal && make clean && make all && cd - > /dev/null") or
-      die (" Error compiling DTS for ariane.");
+      die (" Error compiling DTS for rv64 platform.");
     !system("cd $ENV{ARIANE_ROOT}/openpiton/bootrom/linux && make clean && make all MAX_HARTS=$ENV{PITON_NUM_TILES} && cd - > /dev/null") or
-      die (" Error compiling DTS for ariane.");
+      die (" Error compiling DTS for rv64 platform.");
     print "done\n";
     # currently we have two sources (hardcoded in chipset_impl): UART and Ethernet
     my $num_sources = 2;
     # 2 targets per core (M/S mode)
     my $num_targets = 2 * $ENV{PITON_NUM_TILES};
-    print "generating PLIC for Ariane with $num_targets targets and $num_sources sources...\n";
+    print "generating PLIC for rv64 platform with $num_targets targets and $num_sources sources...\n";
     !system("cd $ENV{ARIANE_ROOT}/src/rv_plic/rtl && ./gen_plic_addrmap.py -t $num_targets -s $num_sources > plic_regmap.sv") or
       die (" Error generating PLIC for Ariane.");
     print "done\n";
@@ -2617,6 +2618,7 @@ sub parse_args
             'rv64_mabi=s',
             'rv64_march=s',
             'rv64_target_triple=s',
+            'rv64_platform!',
             'other_sim_build!',
             'sim_build_args=s@',
             'other_sim_build_cmd=s',
@@ -2809,6 +2811,7 @@ sub parse_args
   }
   if ($opt{ariane} || $opt{blackparrot}) {
     $opt{rv64} = 1 ;
+    $opt{rv64_platform} = 1 ;
     print "$prg: Building/running for rv64\n" ;
   }
 
@@ -2831,7 +2834,7 @@ sub parse_args
   push (@{$opt{config_rtl}}, "PITON_ARIANE")   if ($opt{ariane});
   push (@{$opt{config_rtl}}, "WT_DCACHE")      if ($opt{ariane});
   push (@{$opt{config_rtl}}, "PITON_BLACKPARROT") if ($opt{blackparrot});
-  push (@{$opt{config_rtl}}, "PITON_RV64_PLATFORM") if ($opt{rv64});
+  push (@{$opt{config_rtl}}, "PITON_RV64_PLATFORM") if ($opt{rv64_platform});
 
   if ($opt{pico} or $opt{pico_het} or $opt{ariane} or $opt{blackparrot}) {
     push (@{$opt{config_rtl}}, "NO_MRA_VAL") ;

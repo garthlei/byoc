@@ -95,9 +95,20 @@ if {[info exists ::env(PITON_ARIANE)]} {
   append ALL_DEFAULT_VERILOG_MACROS " PITON_ARIANE WT_DCACHE"
 }
 
+if {[info exists ::env(PITON_BLACKPARROT)]} {
+  append ALL_DEFAULT_VERILOG_MACROS " PITON_BLACKPARROT"
+}
+
+if {[info exists ::env(PITON_RV64_PLATFORM)]} {
+  append ALL_DEFAULT_VERILOG_MACROS " PITON_RV64_PLATFORM"
+}
+
 for {set k 0} {$k < $::env(PITON_NUM_TILES)} {incr k} {
   if {[info exists "::env(RTL_ARIANE$k)"]} {
     append ALL_DEFAULT_VERILOG_MACROS " RTL_ARIANE$k"
+  }
+  if {[info exists "::env(RTL_BLACKPARROT$k)"]} {
+    append ALL_DEFAULT_VERILOG_MACROS " RTL_BLACKPARROT$k"
   }
   if {[info exists "::env(RTL_PICO$k)"]} {
     append ALL_DEFAULT_VERILOG_MACROS " RTL_PICO$k"
@@ -118,8 +129,8 @@ set ALL_RTL_IMPL_FILES [pyhp_preprocess ${ALL_RTL_IMPL_FILES}]
 set ALL_INCLUDE_FILES [pyhp_preprocess ${ALL_INCLUDE_FILES}]
 
 
-if  {[info exists ::env(PITON_ARIANE)]} {
-  puts "INFO: compiling DTS and bootroms for Ariane (MAX_HARTS=$::env(PITON_NUM_TILES), UART_FREQ=$env(CONFIG_SYS_FREQ))..."
+if  {[info exists ::env(PITON_RV64_PLATFORM)]} {
+  puts "INFO: compiling DTS and bootroms for rv64 platform (MAX_HARTS=$::env(PITON_NUM_TILES), UART_FREQ=$env(CONFIG_SYS_FREQ))..."
   set TMP [pwd]
   cd $::env(ARIANE_ROOT)/openpiton/bootrom/baremetal
   # Note: dd dumps info to stderr that we do not want to interpret
@@ -135,7 +146,7 @@ if  {[info exists ::env(PITON_ARIANE)]} {
   # two targets per hart (M,S) and two interrupt sources (UART, Ethernet)
   set NUM_TARGETS [expr 2*$::env(PITON_NUM_TILES)]
   set NUM_SOURCES 2
-  puts "INFO: generating PLIC for Ariane ($NUM_TARGETS targets, $NUM_SOURCES sources)..."
+  puts "INFO: generating PLIC for rv64 platform ($NUM_TARGETS targets, $NUM_SOURCES sources)..."
   cd $::env(ARIANE_ROOT)/src/rv_plic/rtl
   exec ./gen_plic_addrmap.py -t $NUM_TARGETS -s $NUM_SOURCES > plic_regmap.sv
 
