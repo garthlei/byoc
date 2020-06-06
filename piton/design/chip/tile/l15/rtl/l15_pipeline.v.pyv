@@ -826,9 +826,9 @@ begin
 
     // GENERATE INTERRUPT
     // `define L15_INT_VEC_DIS 40'h98_0000_0800
-    // predecode_int_vec_dis_s1 = (pcxdecoder_l15_address == `L15_INT_VEC_DIS); // 40b compare
-    predecode_int_vec_dis_s1 = (pcxdecoder_l15_address[39:32] == constant_int_vec_dis_address[39:32] 
-                              && pcxdecoder_l15_address[11:8] == constant_int_vec_dis_address[11:8]); 
+    predecode_int_vec_dis_s1 = (pcxdecoder_l15_address == `L15_INT_VEC_DIS); // 40b compare
+    //predecode_int_vec_dis_s1 = (pcxdecoder_l15_address[39:32] == constant_int_vec_dis_address[39:32] 
+    //                          && pcxdecoder_l15_address[11:8] == constant_int_vec_dis_address[11:8]); 
 
 
     // TAG CHECKING

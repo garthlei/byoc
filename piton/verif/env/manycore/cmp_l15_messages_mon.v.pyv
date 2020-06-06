@@ -576,6 +576,8 @@ begin
             noc1 = "L15_NOC1_REQTYPE_AMO_MIN_REQUEST";
         `L15_NOC1_REQTYPE_AMO_MINU_REQUEST:
             noc1 = "L15_NOC1_REQTYPE_AMO_MINU_REQUEST";
+        `L15_NOC1_REQTYPE_LR_REQUEST:
+            noc1 = "L15_NOC1_REQTYPE_LR_REQUEST";
         default:
             noc1 = "ERROR noc1";
         endcase
@@ -1090,7 +1092,7 @@ begin
     if (`L15_PIPE0.pcxdecoder_l15_val && `L15_PIPE0.val_s1 && !`L15_PIPE0.stall_s1 && !`L15_PIPE0.noc2decoder_l15_val)
     begin
         if (`L15_PIPE0.pcxdecoder_l15_rqtype == `PCX_REQTYPE_STORE
-            && `L15_PIPE0.pcxdecoder_l15_address == 40'h9800000800)
+            && `L15_PIPE0.pcxdecoder_l15_address == `L15_INT_VEC_DIS)
         begin
             $display("%d : PCX write to INT_VEC_DIS", $time);
             // $display("%d : Simulation -> FAIL(%0s)", $time, "Write to INT_VEC_DIS");

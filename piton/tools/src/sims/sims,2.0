@@ -1391,8 +1391,8 @@ sub generic_sim_build
           push (@{$opt{config_rtl}}, "IBM_SRAM_LSU_ICACHE_MODEL_CHECKER") ;
       }
 
-      push (@{$opt{vcs_build_args}}, "+define+COPROCESSOR_ON") if ($opt{dmbr}) ;
-      push (@{$opt{vcs_build_args}}, "+define+DMBR_CHECKER") if ($opt{dmbr_checker}) ;
+      push (@{$opt{config_rtl}}, "COPROCESSOR_ON") if ($opt{dmbr}) ;
+      push (@{$opt{config_rtl}}, "DMBR_CHECKER") if ($opt{dmbr_checker}) ;
     }
     if ($opt{ncv_build}) {
       # build ncelab and ncsim executable files if not present
@@ -2323,7 +2323,7 @@ sub assemble_diag
           $ENV{RV64_MARCH} = "rv64imafdc" ;
         }
         if ($opt{blackparrot}) {
-          $ENV{RV64_MARCH} = "rv64ia" ;
+          $ENV{RV64_MARCH} = "rv64ima" ;
         }
       } else {
         $ENV{RV64_MARCH} = $opt{rv64_march} ;
@@ -2337,6 +2337,9 @@ sub assemble_diag
         }
       } else {
         $ENV{RV64_MABI} = $opt{rv64_mabi} ;
+      }
+      if ($opt{blackparrot}) {
+        push (@{$opt{gcc_args}}, "-DPITON_NOC_IPI")
       }
       # only recompile if necessary
       if (!$opt{precompiled}) {
@@ -2814,6 +2817,7 @@ sub parse_args
   $ENV{PITON_PICO_HET} = $opt{pico_het};
   $ENV{PITON_ARIANE}   = $opt{ariane};
   $ENV{PITON_BLACKPARROT} = $opt{blackparrot};
+  $ENV{PITON_RV64_PLATFORM}     = $opt{rv64};
   $ENV{BASEJUMP_STL_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/external/basejump_stl";
   $ENV{BP_COMMON_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_common";
   $ENV{BP_FE_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_fe";
@@ -2827,6 +2831,7 @@ sub parse_args
   push (@{$opt{config_rtl}}, "PITON_ARIANE")   if ($opt{ariane});
   push (@{$opt{config_rtl}}, "WT_DCACHE")      if ($opt{ariane});
   push (@{$opt{config_rtl}}, "PITON_BLACKPARROT") if ($opt{blackparrot});
+  push (@{$opt{config_rtl}}, "PITON_RV64_PLATFORM") if ($opt{rv64});
 
   if ($opt{pico} or $opt{pico_het} or $opt{ariane} or $opt{blackparrot}) {
     push (@{$opt{config_rtl}}, "NO_MRA_VAL") ;

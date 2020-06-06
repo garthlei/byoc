@@ -263,7 +263,7 @@ module chipset_impl(
     output                                      net_phy_mdc
 `endif // PITON_FPGA_ETHERNETLITE
 `endif // endif PITONSYS_IO_CTRL
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     output                                      ndmreset_o,    // non-debug module reset
@@ -1015,7 +1015,7 @@ uart_top        uart_top (
 `ifdef PITON_FPGA_ETHERNETLITE
 
     eth_top #(
-    `ifdef PITON_ARIANE
+    `ifdef PITON_RV64_PLATFORM
       .SWAP_ENDIANESS(1)
     `else
       .SWAP_ENDIANESS(0)
@@ -1089,7 +1089,9 @@ ciop_fake_iob ciop_fake_iob(
             text2 = text;
             text2 = text2.replace("PICO_CORE0", "PICO_CORE" + repr(i));
             text2 = text2.replace("ARIANE_CORE0", "ARIANE_CORE" + repr(i));
+            text2 = text2.replace("BLACKPARROT_CORE0", "BLACKPARROT_CORE" + repr(i));
             text2 = text2.replace("RTL_ARIANE0", "RTL_ARIANE" + repr(i));
+            text2 = text2.replace("RTL_BLACKPARROT0", "RTL_BLACKPARROT" + repr(i));
             text2 = text2.replace("RTL_SPARC0", "RTL_SPARC" + repr(i));
             text2 = text2.replace("RTL_PICO0", "RTL_PICO" + repr(i));
             text2 = text2.replace("spc0_inst_done", "spc" + repr(i) + "_inst_done");
@@ -1119,11 +1121,13 @@ fake_uart fake_uart (
 `endif // endif PITONSYS_IOCTRL
 
 
+// BlackParrot also uses this peripheral module to connect to Ariane CLINT and PLIC
+
 /////////////////////////////
 // Ariane-Specific Chipset //
 /////////////////////////////
 
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
 
     wire [1:0] irq_sources, irq_le;
     // 0:level 1:edge
