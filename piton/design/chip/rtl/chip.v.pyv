@@ -139,7 +139,7 @@ module chip(
    output                                       offchip_processor_noc3_yummy
 `endif // endif PITON_NO_CHIP_BRIDGE
 
-`ifdef PITON_RV64
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     input                                       ndmreset_i,    // non-debug module reset
@@ -1038,7 +1038,7 @@ module chip(
         .default_coreid_x           (COREIDX),
         .default_coreid_y           (COREIDY),
         .flat_tileid                (`JTAG_FLATID_WIDTH'd_FLAT_ID_),
-    `ifdef PITON_RV64
+    `ifdef PITON_RV64_PLATFORM
         .debug_req_i         ( debug_req_i[_FLAT_ID_]   ),
         .unavailable_o       ( unavailable_o[_FLAT_ID_] ),
         .timer_irq_i         ( timer_irq_i[_FLAT_ID_]   ),

@@ -180,7 +180,7 @@ if (NETWORK_CONFIG == "xbar_config"):
 print(s)
 %>
 
-`ifdef PITON_RV64
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     input                               debug_req_i,   // async debug request

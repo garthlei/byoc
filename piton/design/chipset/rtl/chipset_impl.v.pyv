@@ -263,7 +263,7 @@ module chipset_impl(
     output                                      net_phy_mdc
 `endif // PITON_FPGA_ETHERNETLITE
 `endif // endif PITONSYS_IO_CTRL
-`ifdef PITON_RV64
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     output                                      ndmreset_o,    // non-debug module reset
@@ -1015,7 +1015,7 @@ uart_top        uart_top (
 `ifdef PITON_FPGA_ETHERNETLITE
 
     eth_top #(
-    `ifdef PITON_RV64
+    `ifdef PITON_RV64_PLATFORM
       .SWAP_ENDIANESS(1)
     `else
       .SWAP_ENDIANESS(0)
@@ -1127,7 +1127,7 @@ fake_uart fake_uart (
 // Ariane-Specific Chipset //
 /////////////////////////////
 
-`ifdef PITON_RV64
+`ifdef PITON_RV64_PLATFORM
 
     wire [1:0] irq_sources, irq_le;
     // 0:level 1:edge
