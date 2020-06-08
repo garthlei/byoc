@@ -27,10 +27,10 @@ def get_bootrom_info(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath,
     piton_ver  = subprocess.check_output([gitver_cmd], shell=True)
     core_ver = ""
     core = "Unknown"
-    if os.environ['PITON_ARIANE']:
+    if int(os.environ.get('PITON_ARIANE', '0')) != 0:
         core = "Ariane"
         core_ver = subprocess.check_output(["cd %s && %s" % (os.environ['ARIANE_ROOT'], gitver_cmd)], shell=True)
-    if os.environ['PITON_BLACKPARROT']:
+    if int(os.environ.get('PITON_BLACKPARROT', '0')) != 0:
         core = "BlackParrot"
         core_ver = subprocess.check_output(["cd %s && %s" % (os.path.join(os.environ['DV_ROOT'], 'design/chip/tile/blackparrot'), gitver_cmd)], shell=True)
 
@@ -138,13 +138,13 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
     core_compat = ""
     core_isa = ""
     soc_compat = ""
-    if os.environ['PITON_ARIANE']:
+    if int(os.environ.get('PITON_ARIANE', '0')) != 0:
         core = "Ariane"
         plat_compat = "eth,ariane-bare-dev"
         core_compat = "eth, ariane"
         core_isa = "rv64imafdc"
         soc_compat = "eth,ariane-bare-soc"
-    if os.environ['PITON_BLACKPARROT']:
+    if int(os.environ.get('PITON_BLACKPARROT', '0')) != 0:
         core = "BlackParrot"
         plat_compat = "bsg,blackparrot-bare-dev"
         core_compat = "bsg, blackparrot"
