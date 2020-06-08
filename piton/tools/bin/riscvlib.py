@@ -12,6 +12,7 @@
 # Author: Michael Schaffner <schaffner@iis.ee.ethz.ch>, ETH Zurich
 # Date: 04.02.2019
 # Description: Device tree generation script for OpenPiton+Ariane.
+# Extended to be more generic OpenPiton RV64 platform
 
 
 import pyhplib
@@ -24,7 +25,14 @@ def get_bootrom_info(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath,
 
     gitver_cmd = "git log | grep commit -m1 | LD_LIBRARY_PATH= awk -e '{print $2;}'"
     piton_ver  = subprocess.check_output([gitver_cmd], shell=True)
-    ariane_ver = subprocess.check_output(["cd %s && %s" % (dtsPath, gitver_cmd)], shell=True)
+    core_ver = ""
+    core = "Unknown"
+    if os.environ['PITON_ARIANE']:
+        core = "Ariane"
+        core_ver = subprocess.check_output(["cd %s && %s" % (os.environ['ARIANE_ROOT'], gitver_cmd)], shell=True)
+    if os.environ['PITON_BLACKPARROT']:
+        core = "BlackParrot"
+        core_ver = subprocess.check_output(["cd %s && %s" % (os.path.join(os.environ['DV_ROOT'], 'design/chip/tile/blackparrot'), gitver_cmd)], shell=True)
 
     # get length of memory
     memLen  = 0
@@ -46,26 +54,26 @@ def get_bootrom_info(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath,
         sysFreq = "Unknown"
 
     tmpStr = '''// Info string generated with get_bootrom_info(...)
-// OpenPiton + Ariane framework
+// OpenPiton RV64 framework
 // Date: %s
 
 const char info[] = {
 "\\r\\n\\r\\n"
 "----------------------------------------\\r\\n"
-"--     OpenPiton+Ariane Platform      --\\r\\n"
+"--     OpenPiton RV64 Platform        --\\r\\n"
 "----------------------------------------\\r\\n"
 "OpenPiton Version: %s                   \\r\\n"
-"Ariane Version:    %s                   \\r\\n"
+"%s Version: %s                 \\r\\n"
 "                                        \\r\\n"
-"FPGA Board:        %s                   \\r\\n"
-"Build Date:        %s                   \\r\\n"
+"FPGA Board:          %s                 \\r\\n"
+"Build Date:          %s                 \\r\\n"
 "                                        \\r\\n"
-"#X-Tiles:          %d                   \\r\\n"
-"#Y-Tiles:          %d                   \\r\\n"
-"#Cores:            %d                   \\r\\n"
-"Core Freq:         %s                   \\r\\n"
-"Network:           %s                   \\r\\n"
-"DRAM Size:         %d MB                \\r\\n"
+"#X-Tiles:            %d                 \\r\\n"
+"#Y-Tiles:            %d                 \\r\\n"
+"#Cores:              %d                 \\r\\n"
+"Core Freq:           %s                 \\r\\n"
+"Network:             %s                 \\r\\n"
+"DRAM Size:           %d MB              \\r\\n"
 "                                        \\r\\n"
 "L1I Size / Assoc:  %3d kB / %d          \\r\\n"
 "L1D Size / Assoc:  %3d kB / %d          \\r\\n"
@@ -76,7 +84,8 @@ const char info[] = {
 
 ''' % (timeStamp,
        piton_ver[0:8],
-       ariane_ver[0:8],
+       core,
+       core_ver[0:8],
        boardName,
        timeStamp,
        int(os.environ['PITON_X_TILES']),
@@ -124,6 +133,24 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
 
     assert nCpus >= 1
 
+    core = "Unknown"
+    plat_compat = ""
+    core_compat = ""
+    core_isa = ""
+    soc_compat = ""
+    if os.environ['PITON_ARIANE']:
+        core = "Ariane"
+        plat_compat = "eth,ariane-bare-dev"
+        core_compat = "eth, ariane"
+        core_isa = "rv64imafdc"
+        soc_compat = "eth,ariane-bare-soc"
+    if os.environ['PITON_BLACKPARROT']:
+        core = "BlackParrot"
+        plat_compat = "bsg,blackparrot-bare-dev"
+        core_compat = "bsg, blackparrot"
+        core_isa = "rv64ima"
+        soc_compat = "bsg,blackparrot-bare-soc"
+
     # get UART base
     uartBase = 0xDEADBEEF
     for i in range(len(devices)):
@@ -132,7 +159,7 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
 
 
     tmpStr = '''// DTS generated with gen_riscv_dts(...)
-// OpenPiton + Ariane framework
+// OpenPiton RV64 framework
 // Date: %s
 
 /dts-v1/;
@@ -140,8 +167,8 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
 / {
     #address-cells = <2>;
     #size-cells = <2>;
-    compatible = "eth,ariane-bare-dev";
-    model = "eth,ariane-bare";
+    compatible = "%s";
+    model = "openpiton";
     // TODO: interrupt-based UART is currently very slow
     // with this configuration. this needs to be fixed.
     // chosen {
@@ -151,7 +178,7 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
         #address-cells = <1>;
         #size-cells = <0>;
         timebase-frequency = <%d>;
-    ''' % (timeStamp, uartBase, timeBaseFreq)
+    ''' % (timeStamp, plat_compat, uartBase, timeBaseFreq)
 
     for k in range(nCpus):
         tmpStr += '''
@@ -160,8 +187,8 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
             device_type = "cpu";
             reg = <%d>;
             status = "okay";
-            compatible = "eth, ariane", "riscv";
-            riscv,isa = "rv64imafdc";
+            compatible = "%s", "riscv";
+            riscv,isa = "%s";
             mmu-type = "riscv,sv39";
             tlb-split;
             // HLIC - hart local interrupt controller
@@ -171,7 +198,7 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
                 compatible = "riscv,cpu-intc";
             };
         };
-        ''' % (k,k,cpuFreq,k,k)
+        ''' % (k,k,cpuFreq,k,core_compat,core_isa,k)
 
     tmpStr += '''
     };
@@ -194,9 +221,9 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
     soc {
         #address-cells = <2>;
         #size-cells = <2>;
-        compatible = "eth,ariane-bare-soc", "simple-bus";
+        compatible = "%s", "simple-bus";
         ranges;
-    '''
+    ''' % (soc_compat)
 
     # TODO: this needs to be extended
     # get the number of interrupt sources

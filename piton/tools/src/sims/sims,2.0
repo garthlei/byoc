@@ -2820,7 +2820,7 @@ sub parse_args
   $ENV{PITON_PICO_HET} = $opt{pico_het};
   $ENV{PITON_ARIANE}   = $opt{ariane};
   $ENV{PITON_BLACKPARROT} = $opt{blackparrot};
-  $ENV{PITON_RV64_PLATFORM}     = $opt{rv64};
+  $ENV{PITON_RV64_PLATFORM}     = $opt{rv64_platform};
   $ENV{BASEJUMP_STL_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/external/basejump_stl";
   $ENV{BP_COMMON_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_common";
   $ENV{BP_FE_DIR} = $ENV{DV_ROOT} . "/design/chip/tile/blackparrot/bp_fe";

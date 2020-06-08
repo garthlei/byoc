@@ -32,7 +32,7 @@ from pyhplib import *
 import riscvlib
 import time
 
-if PITON_ARIANE:
+if PITON_RV64_PLATFORM:
   devices = pyhplib.ReadDevicesXMLFile()
 
   # just use a default frequency for device tree generation if not defined
