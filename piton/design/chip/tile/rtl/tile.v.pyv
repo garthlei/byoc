@@ -828,7 +828,8 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
     // BlackParrot Core //
     //////////////////////
 
-    logic bp_transducer_l15_val, got_header_ack;
+    wire bp_transducer_l15_val;
+    reg got_header_ack;
 
     bp_piton_top
       proc
@@ -877,8 +878,8 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
       );
     
     // Reset the L1.5. This must be flopped 4 cycles after rst_n_f 
-    logic reset_r, reset_rr, reset_rrr, reset_rrrr;
-    always_ff @(posedge clk_gated) begin
+    reg reset_r, reset_rr, reset_rrr, reset_rrrr;
+    always @(posedge clk_gated) begin
       reset_r <= rst_n_f;
       reset_rr <= reset_r;
       reset_rrr <= reset_rr;
@@ -888,7 +889,7 @@ if (TILE_TYPE == `BLACKPARROT_TILE) begin : g_blackparrot_core
 
     assign transducer_l15_val = bp_transducer_l15_val & ~got_header_ack;
 
-    always_ff @(posedge clk_gated) begin
+    always @(posedge clk_gated) begin
       if (~rst_n_f)
         got_header_ack <= 1'b0;
       // TODO: Confirm if this works in all cases
