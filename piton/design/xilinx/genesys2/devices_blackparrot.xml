@@ -48,6 +48,12 @@ Description: Peripheral address map for OpenPiton+BlackParrot configurations.
     <!--BlackParrot specific interrupt controller address mapping -->
     <!--Lengths kept the same as ariane but can be changed -->
     <port>
+        <name>ariane_bootrom</name>
+        <base>0x0000010000</base>
+        <length>0x10000</length>
+        <stream_accessible/>
+    </port>
+    <port>
         <!-- core local interrupt controller with real-time counter. this is shared among all cores -->
         <name>ariane_clint</name>
         <base>0x0000300000</base>
