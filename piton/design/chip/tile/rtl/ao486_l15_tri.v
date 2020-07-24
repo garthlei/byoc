@@ -90,10 +90,9 @@ module ao486_l15_tri(
 );
 
 //Tying off all outputs not being generated
-    assign transducer_l15_data_next_entry = 64'd0;
+    assign transducer_l15_data_next_entry = 64'b0;
     assign transducer_l15_amo_op = 4'd0;
     assign transducer_l15_l1rplway = 2'd0;
-    assign transducer_ao486_readburst_data = 0;
     
 //Tying off unused transducer_l15_ signals for ao486 to zero
     assign transducer_l15_blockinitstore = 1'b0;
@@ -191,6 +190,7 @@ reg [39:0] transducer_l15_address_reg_load;
 reg [1:0] number_of_load_requests;
 reg alignment_load;
 reg single_load;
+reg [95:0] readburst_data_reg;
 
 reg transducer_l15_nc_reg;
 reg l15_transducer_ack_received;
@@ -218,6 +218,7 @@ assign transducer_l15_nc = transducer_l15_nc_reg;
 assign transducer_ao486_writeburst_done = writeburst_done_reg;
 
 assign transducer_ao486_readburst_done = readburst_done_reg;
+assign transducer_ao486_readburst_data = readburst_data_reg;
 //..........................................................................
 
 //always block to decide number of load requests to be sent to L1.5 for each request received from core
@@ -245,6 +246,9 @@ always @(posedge clk) begin
                     number_of_load_requests <= 2'b01;
                     alignment_load <= 1;
                 end
+            end
+            default: begin
+                $display("Unaligned load");
             end
         endcase
     end
@@ -375,11 +379,35 @@ always @(*) begin
 end
 //..........................................................................
 
+//always block to obtain data from load response
+always @(posedge clk) begin
+    if(number_of_load_requests == 2'b01) begin
+        if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+            if(readburst_length_reg == 4'b0001) begin
+                readburst_data_reg <= {88'b0, {l15_transducer_data_0[7:0]}};
+            end
+            else if(readburst_length_reg == 4'b0010) begin
+                readburst_data_reg <= {80'b0, {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]}};
+            end
+            else if(readburst_length_reg == 4'b0100) begin
+                readburst_data_reg <= {64'b0, {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16]}};
+            end
+            else if(readburst_length_reg == 4'b1000) begin
+                readburst_data_reg <= {32'b0, l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
+            end
+        end
+    end
+    else if(~rst_n) begin
+        readburst_data_reg <= 0;
+    end
+end
+//..........................................................................
+
 //always block to set readburst_done signal upon receiving load response from L1.5
 always @(posedge clk) begin
     if(number_of_load_requests == 2'b01) begin
         if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
-            readburst_done_reg <= 1;                        
+            readburst_done_reg <= 1;                      
         end
         else begin
             readburst_done_reg <= 0;
@@ -694,15 +722,29 @@ always @* begin
         if(addr_reg[4:0] == 5'd0) begin
             ifill_index = 0;
         end
-        else if(addr_reg[3:0] == 4'b1000) begin
+        else if(addr_reg[4:0] == 5'b00100) begin
+            ifill_index = 32;
+        end
+        else if(addr_reg[4:0] == 5'b01000) begin
             ifill_index = 64;
+        end
+        else if(addr_reg[4:0] == 5'b01100) begin
+            ifill_index = 96;
         end
         else if(addr_reg[4:0] == 5'b10000) begin
             ifill_index = 128;
         end
     end
     else if(double_access & double_access_count == 2'd1) begin
-        ifill_index = 192;
+        if(ifill_double_access_first_address[4:0] == 5'b10100) begin
+            ifill_index = 160; 
+        end
+        else if(ifill_double_access_first_address[4:0] == 5'b11000) begin
+            ifill_index = 192;
+        end
+        else if(ifill_double_access_first_address[4:0] == 5'b11100) begin
+            ifill_index = 224;
+        end
     end
     else if(~rst_n) begin
         ifill_index = 0;
@@ -1027,8 +1069,8 @@ always @(posedge clk) begin
   else if (flop_bus) begin
     if(ao486_transducer_ifill_req_readcode_address[4] & (| ao486_transducer_ifill_req_readcode_address[3:2])) begin
         double_access <= 1'b1;
-        ifill_double_access_first_address <= {ao486_transducer_ifill_req_readcode_address[31:6], 1'b0, ao486_transducer_ifill_req_readcode_address[4:0]};
-        ifill_double_access_second_address <= {ao486_transducer_ifill_req_readcode_address[31:6], 1'b1, ao486_transducer_ifill_req_readcode_address[4:0]};
+        ifill_double_access_first_address <= {ao486_transducer_ifill_req_readcode_address[31:5], ao486_transducer_ifill_req_readcode_address[4:0]};
+        ifill_double_access_second_address <= {ao486_transducer_ifill_req_readcode_address[31:5] + 1'b1, ao486_transducer_ifill_req_readcode_address[4:0]};
     end
     else begin
         addr_reg <= ao486_transducer_ifill_req_readcode_address;
@@ -1045,16 +1087,16 @@ end
 always @* begin
     case (byteenable_reg)
     4'b0001, 4'b0010, 4'b0100, 4'b1000: begin
-        req_size_read = `PCX_SZ_1B;
+        req_size_read = `MSG_DATA_SIZE_1B;
     end
     4'b0011, 4'b0110, 4'b1100: begin
-        req_size_read = `PCX_SZ_2B;
+        req_size_read = `MSG_DATA_SIZE_2B;
     end
     4'b0111, 4'b1110: begin
-        req_size_read = `PCX_SZ_4B;
+        req_size_read = `MSG_DATA_SIZE_4B;
     end
     4'b1111: begin
-        req_size_read = `PCX_SZ_4B;
+        req_size_read = `MSG_DATA_SIZE_4B;
     end
     default: begin
         req_size_read = 3'd0;
