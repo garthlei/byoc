@@ -135,8 +135,8 @@ reg [1:0] counter_state_ifill_partial;
 reg continue_ifill_count;
 reg readcode_done_reg;
 reg readcode_partial_done_reg;
-reg [3:0] byteenable_reg;
-reg [2:0] req_size_read;
+reg [3:0] request_size;
+reg [2:0] transducer_l15_req_size_reg;
 reg double_access;
 reg [31:0] ifill_double_access_first_address;
 reg [31:0] ifill_double_access_second_address;
@@ -177,6 +177,11 @@ reg second_store_ack;
 reg third_store_ack;
 reg third_store_header;
 reg [2:0] req_type_store;
+reg [55:0] writeburst_flipped_data_reg;
+reg [2:0] aligned_store_index;
+reg [1:0] unaligned_store_req_count;
+reg double_store_done;
+reg triple_store_done;
 
 reg flop_bus_load;
 reg [31:0] addr_reg_load;
@@ -211,7 +216,7 @@ assign transducer_ao486_readcode_line = readcode_line_reg;
 assign state_wire = next_state;
 assign counter_ifill_partial = counter_state_ifill_partial;
 assign transducer_ao486_readcode_partial_done = readcode_partial_done_reg;
-assign transducer_l15_size = req_size_read;
+assign transducer_l15_size = transducer_l15_req_size_reg;
 assign transducer_l15_data = transducer_l15_data_reg;
 assign transducer_l15_nc = transducer_l15_nc_reg;
 
@@ -349,32 +354,116 @@ end
 always @(*) begin
     if(number_of_store_requests == 2'b01 & transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
         single_store = 1;
-        if(writeburst_length_reg == 3'b100) begin
-            transducer_l15_data_reg = {writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[23:16], writeburst_data_reg[31:24],writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[23:16], writeburst_data_reg[31:24]};
-        end
-        else if(writeburst_length_reg == 3'b010) begin
-            transducer_l15_data_reg = {writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[7:0], writeburst_data_reg[15:8]};
-        end
-        else if(writeburst_length_reg == 3'b001) begin
-            transducer_l15_data_reg = {writeburst_data_reg[7:0], writeburst_data_reg[7:0], writeburst_data_reg[7:0], writeburst_data_reg[7:0], writeburst_data_reg[7:0], writeburst_data_reg[7:0], writeburst_data_reg[7:0], writeburst_data_reg[7:0]};
-        end
+        case (writeburst_length_reg)
+            3'b100: begin
+                transducer_l15_data_reg = {2{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:32]}};
+            end
+            3'b010: begin
+                transducer_l15_data_reg = {4{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:16]}};
+            end
+            3'b001: begin
+                transducer_l15_data_reg = {8{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:8]}};
+            end
+        endcase
     end
     else if(number_of_store_requests == 2'b10 & transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
         double_store = 1;
-        if(writeburst_length_reg == 3'b010) begin   
-            
+        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+            case (store_length_1)
+                3'b100: begin
+                    transducer_l15_data_reg = {2{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:32]}};
+                end
+                3'b010: begin
+                    transducer_l15_data_reg = {4{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:16]}};
+                end
+                3'b001: begin
+                    transducer_l15_data_reg = {8{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:8]}};
+                end
+            endcase
         end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+            if(~second_store_ack) begin
+                case (store_length_2)
+                    3'b100: begin
+                        transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:32]}};
+                    end
+                    3'b010: begin
+                        transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:16]}};
+                    end
+                    3'b001: begin
+                        transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:8]}};
+                    end
+                endcase
+            end
+            else begin
+                transducer_l15_data_reg = 0;
+            end
+        end                        
+    end
+    else if(number_of_store_requests == 2'b11 & transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
+        triple_store = 1;
+        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+            case (store_length_1)
+                3'b100: begin
+                    transducer_l15_data_reg = {2{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:32]}};
+                end
+                3'b010: begin
+                    transducer_l15_data_reg = {4{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:16]}};
+                end
+                3'b001: begin
+                    transducer_l15_data_reg = {8{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:8]}};
+                end
+            endcase
+        end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+            if(~second_store_ack) begin
+                case (store_length_2)
+                    3'b100: begin
+                        transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:32]}};
+                    end
+                    3'b010: begin
+                        transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:16]}};
+                    end
+                    3'b001: begin
+                        transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:8]}};
+                    end
+                endcase
+            end
+            else if(~third_store_ack) begin
+                case (store_length_3) 
+                    3'b100: begin
+                        transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - (store_length_1+store_length_2)*8)-:32]}};
+                    end
+                    3'b010: begin
+                        transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - (store_length_1+store_length_2)*8)-:16]}};
+                    end
+                    3'b001: begin
+                        transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - (store_length_1+store_length_2)*8)-:8]}};
+                    end
+                endcase
+            end
+            else begin
+                transducer_l15_data_reg = 0;
+            end
+        end                        
     end
     else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
         if(number_of_store_requests == 2'b01) begin
             transducer_l15_data_reg = 0;
             single_store = 0; 
         end
+        else if(number_of_store_requests == 2'b10 & double_store_done) begin
+            double_store = 0;
+        end
+        else if(number_of_store_requests == 2'b11 & triple_store_done) begin
+            triple_store = 0;
+        end 
     end
     else if(~rst_n) begin
         transducer_l15_data_reg = 0;
         single_store = 0;
-        first_store_ack = 0;
+        double_store = 0;
+        triple_store = 0;
     end
 end
 //..........................................................................
@@ -419,6 +508,45 @@ always @(posedge clk) begin
 end
 //..........................................................................
 
+//always block to set second and third store acknowledge 
+always @* begin
+    if(number_of_store_requests == 2'b10) begin
+        if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~first_store_ack) begin
+            second_store_ack = 0;
+        end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & first_store_ack) begin
+            second_store_ack = 1;
+            double_store_done = 1;
+        end
+        else begin
+            double_store_done = 0;
+        end
+    end
+    else if(number_of_store_requests == 2'b11) begin
+        if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~first_store_ack) begin
+            second_store_ack = 0;
+            third_store_ack = 0;
+        end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & first_store_ack & ~third_store_header) begin
+            second_store_ack = 1;
+        end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & third_store_header) begin
+            third_store_ack = 1;
+            triple_store_done = 1;
+        end
+        else begin
+            triple_store_done = 0;
+        end
+    end
+    else if(~rst_n) begin
+        second_store_ack = 0;
+        third_store_ack = 0;
+        double_store_done = 0;
+        triple_store_done = 0;
+    end
+end
+//..........................................................................
+
 //always block to set writeburst_done signal upon receiving store acknowledgement from L1.5
 always @(posedge clk) begin
     if(number_of_store_requests == 2'b01) begin
@@ -430,11 +558,7 @@ always @(posedge clk) begin
         end
     end
     else if(number_of_store_requests == 2'b10) begin
-        if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~first_store_ack) begin
-            second_store_ack <= 0;
-        end
-        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & first_store_ack) begin
-            second_store_ack <= 1;
+        if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & first_store_ack) begin
             writeburst_done_reg <= 1;
         end
         else begin
@@ -442,16 +566,8 @@ always @(posedge clk) begin
         end
     end
     else if(number_of_store_requests == 2'b11) begin
-        if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~first_store_ack) begin
-            second_store_ack <= 0;
-            third_store_ack <= 0;
-        end
-        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & first_store_ack & ~third_store_header) begin
-            second_store_ack <= 1;
-        end
-        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & third_store_header) begin
+        if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & third_store_header) begin
             writeburst_done_reg <= 1;
-            third_store_ack <=1;
         end
         else begin
             writeburst_done_reg <= 0;
@@ -459,7 +575,6 @@ always @(posedge clk) begin
     end
     else if(~rst_n) begin
         writeburst_done_reg <= 0;
-        second_store_ack <= 0;
     end
 end
 //..........................................................................
@@ -506,6 +621,30 @@ always @* begin
 end      
 //..........................................................................
 
+//always block to acknowledge different stores in unaligned requests
+always @(posedge clk) begin
+    if(double_store) begin
+        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & unaligned_store_req_count == 0) begin
+            first_store_ack <= 0;
+        end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+            first_store_ack <= 1;
+        end
+    end
+    else if(triple_store) begin
+        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & unaligned_store_req_count == 0) begin
+            first_store_ack <= 0;
+        end
+        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+            first_store_ack <= 1;
+        end
+    end
+    else if(~rst_n) begin
+        first_store_ack <= 0;
+    end
+end
+//..........................................................................
+
 //always block to set address for store requests
 always @(posedge clk) begin
     if(single_store) begin
@@ -520,50 +659,53 @@ always @(posedge clk) begin
         end
     end
     else if(double_store) begin
-        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
+        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
             transducer_l15_address_reg_store <= {{8{store_address_1[31]}}, store_address_1};
-            first_store_ack <= 0;
+            unaligned_store_req_count <= 0;
         end
         else if(l15_transducer_header_ack) begin
             transducer_l15_address_reg_store <= transducer_l15_address_reg_store;
         end
         else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
-            first_store_ack <= 1;
             if(~second_store_ack) begin
                 transducer_l15_address_reg_store <= {{8{store_address_2[31]}}, store_address_2};
+                unaligned_store_req_count <= 2'b01;
             end
             else begin
                 transducer_l15_address_reg_store <= 0;
+                unaligned_store_req_count <= 2'b10;
             end
         end
     end
     else if(triple_store) begin
-        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
+        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
             transducer_l15_address_reg_store <= {{8{store_address_1[31]}}, store_address_1};
-            first_store_ack <= 0;
             third_store_header <= 0;
+            unaligned_store_req_count <= 0;
         end
         else if(l15_transducer_header_ack) begin
             transducer_l15_address_reg_store <= transducer_l15_address_reg_store;
         end
         else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
-            first_store_ack <= 1;
             if(~second_store_ack) begin
                 transducer_l15_address_reg_store <= {{8{store_address_2[31]}}, store_address_2};
+                unaligned_store_req_count <= 2'b01;
             end
             else if(~third_store_ack) begin
                 transducer_l15_address_reg_store <= {{8{store_address_3[31]}}, store_address_3};
                 third_store_header <= 1;
+                unaligned_store_req_count <= 2'b10;
             end
             else begin
                 transducer_l15_address_reg_store <= 0;
+                unaligned_store_req_count <= 2'b11;
             end
         end
     end
     else if(~rst_n) begin
         transducer_l15_address_reg_store <= 0;
-        first_store_ack <= 0;
         third_store_header <= 0;
+        unaligned_store_req_count <= 0;
     end
 end
 //..........................................................................
@@ -830,10 +972,10 @@ always @(*) begin
     else if(l15_transducer_returntype == `IFILL_RET & l15_transducer_val & (~double_access | double_access_ifill_done)) begin
         state_reg = IDLE;
     end
-    else if(req_type_store == STORE & ifill_response_received & load_response_received & ~l15_transducer_val & new_store_req == 1) begin
+    else if(req_type_store == STORE & ifill_response_received & load_response_received & ~l15_transducer_val & new_store_req == 1 & ~double_store_done & ~triple_store_done) begin
         state_reg = STORE;
     end
-    else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+    else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & (single_store | double_store_done | triple_store_done)) begin
         state_reg = IDLE;
     end
     else if(req_type_load == LOAD & new_load_req == 1 & ifill_response_received & store_response_received) begin
@@ -862,7 +1004,7 @@ always @(posedge clk) begin
         transducer_l15_rqtype_reg <= `STORE_RQ;
         store_response_received <= 0;
     end
-    else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+    else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & (single_store | double_store_done | triple_store_done)) begin
         transducer_l15_rqtype_reg <= 5'd0;
         store_response_received <= 1;
     end
@@ -1000,6 +1142,30 @@ always @(posedge clk) begin
 end
 //..........................................................................
 
+//always block to flip store data received from core
+always @(posedge clk) begin
+    if(~rst_n) begin
+        aligned_store_index <= 0;
+        writeburst_flipped_data_reg <= 0;
+    end
+    else if(new_store_req) begin
+        writeburst_flipped_data_reg <= {writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[23:16], writeburst_data_reg[31:24], writeburst_data_reg[39:32], writeburst_data_reg[47:40], writeburst_data_reg[55:48]};
+        if(addr_reg_store[1:0] == 0) begin
+            aligned_store_index <= 3'b111;
+        end
+        else if(addr_reg_store[1:0] == 2'b01) begin
+            aligned_store_index <= 3'b110;
+        end
+        else if(addr_reg_store[1:0] == 2'b10) begin
+            aligned_store_index <= 3'b101;
+        end
+        else begin
+            aligned_store_index <= 3'b100;
+        end
+    end
+end
+//..........................................................................
+
 //always block to flop address for store request
 always @(posedge clk) begin
     if(~rst_n) begin
@@ -1023,36 +1189,60 @@ always @(posedge clk) begin
 end
 //..........................................................................
 
-//always block to set byteenable_reg; to be used in case statements for transducer_l15_size
+//always block to set request_size to be used in case statements for transducer_l15_size
 always @(posedge clk) begin
     if(~rst_n) begin
-        byteenable_reg <= 4'd0;
+        request_size <= 4'd0;
     end
     else if(state_reg == IFILL) begin
-        byteenable_reg <= 4'hF;
+        request_size <= 4'b0100;
     end
     else if(state_reg == STORE) begin
         if(writeburst_length_reg == 3'b001) begin
-            byteenable_reg <= 4'b0001;
+            request_size <= 4'b0001;
         end
         else if(number_of_store_requests == 2'b01 & alignment_store == ALIGNED_STORE & writeburst_length_reg == 3'b010) begin
-            byteenable_reg <= 4'b0011;
+            request_size <= 4'b0010;
         end
         else if(number_of_store_requests == 2'b01 & alignment_store == ALIGNED_STORE & writeburst_length_reg == 3'b100) begin
-            byteenable_reg <= 4'b1111;
+            request_size <= 4'b0100;
+        end
+        else if(double_store) begin
+            if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+                request_size <= {1'b0, store_length_1};
+            end
+            else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~second_store_ack) begin
+                request_size <= {1'b0, store_length_2};
+            end
+        end
+        else if(triple_store) begin
+            if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+                request_size <= {1'b0, store_length_1};
+            end
+            else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+                if(~second_store_ack) begin
+                    request_size <= {1'b0, store_length_2};
+                end
+                else if(~third_store_ack) begin
+                    request_size <= {1'b0, store_length_3};
+                end
+            end
         end
     end
     else if(state_reg == LOAD) begin
         if(readburst_length_reg == 4'b0001) begin
-            byteenable_reg <= 4'b0001;
+            request_size <= 4'b0001;
         end
         else if(number_of_load_requests == 2'b01 & alignment_load) begin
             if(readburst_length_reg == 4'b0010) begin
-                byteenable_reg <= 4'b0011;
+                request_size <= 4'b0010;
             end
             else if(readburst_length_reg == 4'b0100) begin
-                byteenable_reg <= 4'b1111;
+                request_size <= 4'b0100;
             end                                                             //add case for 8B load request
+            else if(readburst_length_reg == 4'b1000) begin
+                request_size <= 4'b1000;
+            end
         end
     end
 end
@@ -1085,21 +1275,21 @@ end
 
 //Always block to set request size from TRI to L1.5                                                                   (Verified)
 always @* begin
-    case (byteenable_reg)
-    4'b0001, 4'b0010, 4'b0100, 4'b1000: begin
-        req_size_read = `MSG_DATA_SIZE_1B;
+    case (request_size)
+    4'b0001: begin
+        transducer_l15_req_size_reg = `MSG_DATA_SIZE_1B;
     end
-    4'b0011, 4'b0110, 4'b1100: begin
-        req_size_read = `MSG_DATA_SIZE_2B;
+    4'b0010: begin
+        transducer_l15_req_size_reg = `MSG_DATA_SIZE_2B;
     end
-    4'b0111, 4'b1110: begin
-        req_size_read = `MSG_DATA_SIZE_4B;
+    4'b0100: begin
+        transducer_l15_req_size_reg = `MSG_DATA_SIZE_4B;
     end
-    4'b1111: begin
-        req_size_read = `MSG_DATA_SIZE_4B;
+    4'b1000: begin
+        transducer_l15_req_size_reg = `MSG_DATA_SIZE_8B;
     end
     default: begin
-        req_size_read = 3'd0;
+        transducer_l15_req_size_reg = 3'd0;
     end
     endcase
 end
