@@ -196,6 +196,7 @@ reg [1:0] number_of_load_requests;
 reg alignment_load;
 reg single_load;
 reg [95:0] readburst_data_reg;
+reg [4:0] load_address_index;
 
 reg transducer_l15_nc_reg;
 reg l15_transducer_ack_received;
@@ -226,30 +227,49 @@ assign transducer_ao486_readburst_done = readburst_done_reg;
 assign transducer_ao486_readburst_data = readburst_data_reg;
 //..........................................................................
 
+//always block to decide index at which load data is to be put based on address
+always @* begin
+    case (addr_reg_load[1:0])
+        2'b00: begin
+            load_address_index = 0;
+        end
+        2'b01: begin
+            load_address_index = 5'b01000;
+        end
+        2'b10: begin
+            load_address_index = 5'b10000;
+        end
+        2'b11: begin
+            load_address_index = 5'b11000;
+        end
+    endcase
+end
+//..........................................................................
+
 //always block to decide number of load requests to be sent to L1.5 for each request received from core
-always @(posedge clk) begin
+always @(*) begin
     if(new_load_req) begin
         case (readburst_length_reg)
             4'b0001: begin
-                number_of_load_requests <= 2'b01;
-                alignment_load <= 1;
+                number_of_load_requests = 2'b01;
+                alignment_load = 1;
             end
             4'b0010: begin
                 if(~addr_reg_load[0]) begin
-                    number_of_load_requests <= 2'b01;
-                    alignment_load <= 1;
+                    number_of_load_requests = 2'b01;
+                    alignment_load = 1;
                 end
             end
             4'b0100: begin
                 if(addr_reg_load[1:0] == 2'b0) begin
-                    number_of_load_requests <= 2'b01;
-                    alignment_load <= 1;
+                    number_of_load_requests = 2'b01;
+                    alignment_load = 1;
                 end
             end
             4'b1000: begin
                 if(addr_reg_load[2:0] == 3'b0) begin
-                    number_of_load_requests <= 2'b01;
-                    alignment_load <= 1;
+                    number_of_load_requests = 2'b01;
+                    alignment_load = 1;
                 end
             end
             default: begin
@@ -258,8 +278,8 @@ always @(posedge clk) begin
         endcase
     end
     else if(~rst_n) begin
-        number_of_load_requests <= 0;
-        alignment_load <= 0;
+        number_of_load_requests = 0;
+        alignment_load = 0;
     end
 end
 //..........................................................................
@@ -473,16 +493,16 @@ always @(posedge clk) begin
     if(number_of_load_requests == 2'b01) begin
         if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
             if(readburst_length_reg == 4'b0001) begin
-                readburst_data_reg <= {88'b0, {l15_transducer_data_0[7:0]}};
+                readburst_data_reg[load_address_index+:8] <= l15_transducer_data_0[7:0];
             end
             else if(readburst_length_reg == 4'b0010) begin
-                readburst_data_reg <= {80'b0, {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]}};
+                readburst_data_reg[load_address_index+:16] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]};
             end
             else if(readburst_length_reg == 4'b0100) begin
-                readburst_data_reg <= {64'b0, {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16]}};
+                readburst_data_reg[load_address_index+:32] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
             end
             else if(readburst_length_reg == 4'b1000) begin
-                readburst_data_reg <= {32'b0, l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
+                readburst_data_reg[load_address_index+:64] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
             end
         end
     end
