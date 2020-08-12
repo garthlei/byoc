@@ -112,6 +112,10 @@ localparam LOAD  = 3'b011;
 localparam IFILL = 3'b101;
 localparam ALIGNED_STORE = 2'b0;
 localparam UNALIGNED_STORE = 2'b11;
+localparam START_LOAD = 2'b00;
+localparam WAITLOOP_LOAD = 2'b10;
+localparam END_LOAD = 2'b01;
+localparam IDLE_LOAD = 2'b11;
 
 reg [2:0] state_reg;                   //Current state of processor <-> OP interface
 reg [2:0] next_state;              //Next state of processor <-> OP interface
@@ -197,6 +201,19 @@ reg alignment_load;
 reg single_load;
 reg [95:0] readburst_data_reg;
 reg [4:0] load_address_index;
+reg [1:0] fsm_current_state_load;
+reg [1:0] fsm_next_state_load;
+reg [3:0] difference_load_size;
+reg load_fsm_output_done;
+reg outstanding_load_req;
+reg [3:0] remaining_load_length;
+reg [31:0] next_load_address;
+reg [3:0] unaligned_load_size;
+reg unaligned_load_new_request;
+reg unaligned_load_response_received;
+reg [31:0] unaligned_load_address_reg;
+reg first_unaligned_load_req_initialised;
+reg [63:0] unaligned_load_data;
 
 reg transducer_l15_nc_reg;
 reg l15_transducer_ack_received;
@@ -227,6 +244,236 @@ assign transducer_ao486_readburst_done = readburst_done_reg;
 assign transducer_ao486_readburst_data = readburst_data_reg;
 //..........................................................................
 
+//always block to trigger new load request for updating remaining load size 
+always @(*) begin
+    if(transducer_l15_rqtype_reg == `LOAD_RQ & transducer_l15_val & ~alignment_load) begin
+        unaligned_load_new_request = 1;
+        unaligned_load_response_received = 0;
+        outstanding_load_req = 1;
+    end
+    else if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val & ~alignment_load) begin
+        unaligned_load_response_received = 1;
+        unaligned_load_new_request = 0;
+        outstanding_load_req = 0;
+    end
+    else if(~rst_n) begin
+        unaligned_load_new_request = 0;
+        unaligned_load_response_received = 0;
+        outstanding_load_req = 0;
+    end
+    else begin
+        unaligned_load_response_received = 0;
+    end
+end
+//..........................................................................
+
+//always block to calculate remaining ualigned load request size
+always @(posedge clk) begin
+    if(first_unaligned_load_req_initialised) begin
+        remaining_load_length <= readburst_length_reg;
+        difference_load_size <= readburst_length_reg;
+    end
+    else if(unaligned_load_response_received) begin
+        remaining_load_length <= remaining_load_length - unaligned_load_size;
+        difference_load_size <= remaining_load_length - unaligned_load_size;
+    end
+    else if(~rst_n) begin
+        remaining_load_length <= 0;
+        difference_load_size <= 0;
+    end
+end
+//..........................................................................
+
+//always block to flop next address for unlaigned loads
+always @(posedge clk) begin
+    if(unaligned_load_new_request) begin
+        unaligned_load_address_reg <= next_load_address;
+    end
+    else if(~rst_n) begin
+        unaligned_load_address_reg <= 0;
+    end
+end
+//..........................................................................
+
+//always block to calculate next load address for unaligned load requests
+always @(*) begin
+    if(~rst_n) begin
+        unaligned_load_size = 0;
+        next_load_address = 0;
+    end
+    else if(state_reg == LOAD & ~alignment_load & ~outstanding_load_req & ~l15_transducer_val) begin
+        case (fsm_current_state_load)
+            START_LOAD: begin
+                next_load_address = addr_reg_load;
+                if(addr_reg_load[1:0] == 2'd0 & readburst_length_reg >= 4'd4) begin
+                    unaligned_load_size = 4'd4;
+                end 
+                else if(addr_reg_load[0] == 0 & readburst_length_reg >= 4'd2) begin
+                    unaligned_load_size = 4'd2;
+                end
+                else begin
+                    unaligned_load_size = 4'd1;
+                end
+            end
+            WAITLOOP_LOAD, END_LOAD: begin
+                next_load_address = addr_reg_load + (readburst_length_reg - remaining_load_length);
+                if(next_load_address[1:0] == 2'd0 & remaining_load_length >= 4'd4) begin
+                    unaligned_load_size = 4'd4;
+                end
+                else if(next_load_address[0] == 0 & remaining_load_length >= 4'd2) begin
+                    unaligned_load_size = 4'd2;
+                end
+                else begin
+                    unaligned_load_size = 4'd1;
+                end
+            end
+        endcase
+    end
+end                                
+//..........................................................................
+
+//always block to accumulate data obtained from multiple requests for unaligned loads
+always @* begin
+    if(~rst_n) begin
+        unaligned_load_data = 0;
+    end
+    else if(~alignment_load & l15_transducer_val & l15_transducer_returntype == `LOAD_RET) begin
+        
+    end
+end
+//..........................................................................
+
+//always block to obtain data from load response
+always @(posedge clk) begin
+    if(number_of_load_requests == 2'b01 & alignment_load) begin
+        if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+            if(readburst_length_reg == 4'b0001) begin
+                readburst_data_reg[load_address_index+:8] <= l15_transducer_data_0[7:0];
+            end
+            else if(readburst_length_reg == 4'b0010) begin
+                readburst_data_reg[load_address_index+:16] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]};
+            end
+            else if(readburst_length_reg == 4'b0100) begin
+                readburst_data_reg[load_address_index+:32] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
+            end
+            else if(readburst_length_reg == 4'b1000) begin
+                readburst_data_reg[load_address_index+:64] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
+            end
+        end
+    end
+    /*else if(~alignment_load) begin
+        
+    end*/
+    else if(~rst_n) begin
+        readburst_data_reg <= 0;
+    end
+end
+//..........................................................................
+
+//always block to set readburst_done signal upon receiving load response from L1.5
+always @(posedge clk) begin
+    if(number_of_load_requests == 2'b01 & alignment_load) begin
+        if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+            readburst_done_reg <= 1;                      
+        end
+        else begin
+            readburst_done_reg <= 0;
+        end
+    end
+    else if(~alignment_load) begin
+        if(load_fsm_output_done) begin
+            readburst_done_reg <= 1;
+        end else begin
+           readburst_done_reg <= 0; 
+        end
+    end
+    else if(~rst_n) begin
+        readburst_done_reg <= 0;
+    end
+end
+//..........................................................................
+
+//always block to create state register for handling load requests FSM                  FSM State Register
+always @(posedge clk or posedge new_load_req) begin
+    if(~new_load_req) begin
+        fsm_current_state_load <= IDLE_LOAD;
+    end
+    else if (new_load_req & ~alignment_load & state_reg == LOAD) begin
+        fsm_current_state_load <= fsm_next_state_load;
+    end
+end
+//..........................................................................
+
+//always block to compute output logic for load requests FSM                            FSM Output Logic 
+always @(fsm_current_state_load or outstanding_load_req) begin
+    load_fsm_output_done = 0;
+    case (fsm_current_state_load) 
+        START_LOAD: begin
+            load_fsm_output_done = 0;
+        end
+        WAITLOOP_LOAD: begin
+            load_fsm_output_done = 0;
+        end
+        END_LOAD: begin
+            load_fsm_output_done = 1;
+        end
+    endcase
+end
+//..........................................................................
+
+//always block to set first unaligned request initialisation 
+always @(fsm_next_state_load or posedge outstanding_load_req) begin
+    if(fsm_next_state_load == START_LOAD & ~outstanding_load_req) begin
+        first_unaligned_load_req_initialised = 1;
+    end
+    else begin
+        first_unaligned_load_req_initialised = 0;
+    end
+end
+//..........................................................................
+
+//always block to compute next state logic for load requests FSM                           FSM Next State Logic
+always @(fsm_current_state_load or outstanding_load_req or difference_load_size or state_reg) begin
+    if(state_reg == LOAD) begin
+        case (fsm_current_state_load) 
+            START_LOAD: begin   
+                if(outstanding_load_req) begin
+                    fsm_next_state_load = START_LOAD;
+                end
+                else if(difference_load_size == 0) begin
+                    fsm_next_state_load = END_LOAD;
+                end
+                else if(~first_unaligned_load_req_initialised) begin
+                    fsm_next_state_load = WAITLOOP_LOAD;
+                end
+            end
+            WAITLOOP_LOAD: begin
+                if(~outstanding_load_req & difference_load_size == 0) begin
+                    fsm_next_state_load = END_LOAD;
+                end
+                else begin
+                    fsm_next_state_load = WAITLOOP_LOAD;
+                end
+            end
+            END_LOAD: begin
+                if(~outstanding_load_req & difference_load_size != 0) begin
+                    fsm_next_state_load = END_LOAD;
+                end
+                else begin
+                    fsm_next_state_load = IDLE_LOAD;
+                end
+            end
+            IDLE_LOAD: begin
+                fsm_next_state_load = START_LOAD;
+            end
+        endcase    
+    end
+    else begin
+        fsm_next_state_load = IDLE_LOAD;
+    end
+end
+//..........................................................................
+
 //always block to decide index at which load data is to be put based on address
 always @* begin
     case (addr_reg_load[1:0])
@@ -240,7 +487,7 @@ always @* begin
             load_address_index = 5'b10000;
         end
         2'b11: begin
-            load_address_index = 5'b11000;
+            load_address_index = 5'b11000;  
         end
     endcase
 end
@@ -259,11 +506,23 @@ always @(*) begin
                     number_of_load_requests = 2'b01;
                     alignment_load = 1;
                 end
+                else if(addr_reg_load[0]) begin
+                    $display("Unaligned load");
+                    alignment_load = 0;
+                end
             end
+            4'b0011, 4'b0101, 4'b0110, 4'b0111: begin
+                $display("Unaligned load");
+                alignment_load = 0;
+            end                    
             4'b0100: begin
                 if(addr_reg_load[1:0] == 2'b0) begin
                     number_of_load_requests = 2'b01;
                     alignment_load = 1;
+                end
+                else begin
+                    alignment_load = 0;
+                    $display("Unaligned load");
                 end
             end
             4'b1000: begin
@@ -271,9 +530,10 @@ always @(*) begin
                     number_of_load_requests = 2'b01;
                     alignment_load = 1;
                 end
-            end
-            default: begin
-                $display("Unaligned load");
+                else begin
+                    $display("Unaligned load");
+                    alignment_load = 0;
+                end
             end
         endcase
     end
@@ -298,6 +558,7 @@ always @(posedge clk) begin
                     number_of_store_requests <= 2'b01;
                 end
                 else if(addr_reg_store[0]) begin
+                    $display("Unaligned store with 2 requests");
                     alignment_store <= UNALIGNED_STORE;
                     number_of_store_requests <= 2'b10;
                     store_length_1 <= 3'b001;
@@ -308,6 +569,7 @@ always @(posedge clk) begin
             end
             3'b011: begin                          
                 alignment_store <= UNALIGNED_STORE;
+                $display("Unaligned store with 2 requests");
                 number_of_store_requests = 2'b10;
                 store_address_1 <= addr_reg_store;
                 if(~addr_reg_store[0]) begin
@@ -328,6 +590,7 @@ always @(posedge clk) begin
                 end
                 else if(addr_reg_store[1:0] == 2'b01) begin
                     alignment_store <= UNALIGNED_STORE;
+                    $display("Unaligned store with 3 requests");
                     number_of_store_requests <= 2'b11;
                     store_length_1 <= 3'b001;
                     store_length_2 <= 3'b010;
@@ -339,6 +602,7 @@ always @(posedge clk) begin
                 else if(addr_reg_store[1:0] == 2'b10) begin
                     alignment_store <= UNALIGNED_STORE;
                     number_of_store_requests <= 2'b10;
+                    $display("Unaligned store with 2 requests");
                     store_length_1 <= 3'b010;
                     store_length_2 <= 3'b010;
                     store_address_1 <= addr_reg_store;
@@ -347,6 +611,7 @@ always @(posedge clk) begin
                 else if(addr_reg_store[1:0] == 2'b11) begin
                     alignment_store <= UNALIGNED_STORE;
                     number_of_store_requests <= 2'b11;
+                    $display("Unaligned store with 3 requests");
                     store_length_1 <= 3'b001;
                     store_length_2 <= 3'b010;
                     store_length_3 <= 3'b001;
@@ -488,46 +753,6 @@ always @(*) begin
 end
 //..........................................................................
 
-//always block to obtain data from load response
-always @(posedge clk) begin
-    if(number_of_load_requests == 2'b01) begin
-        if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
-            if(readburst_length_reg == 4'b0001) begin
-                readburst_data_reg[load_address_index+:8] <= l15_transducer_data_0[7:0];
-            end
-            else if(readburst_length_reg == 4'b0010) begin
-                readburst_data_reg[load_address_index+:16] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]};
-            end
-            else if(readburst_length_reg == 4'b0100) begin
-                readburst_data_reg[load_address_index+:32] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
-            end
-            else if(readburst_length_reg == 4'b1000) begin
-                readburst_data_reg[load_address_index+:64] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
-            end
-        end
-    end
-    else if(~rst_n) begin
-        readburst_data_reg <= 0;
-    end
-end
-//..........................................................................
-
-//always block to set readburst_done signal upon receiving load response from L1.5
-always @(posedge clk) begin
-    if(number_of_load_requests == 2'b01) begin
-        if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
-            readburst_done_reg <= 1;                      
-        end
-        else begin
-            readburst_done_reg <= 0;
-        end
-    end
-    else if(~rst_n) begin
-        readburst_done_reg <= 0;
-    end
-end
-//..........................................................................
-
 //always block to set second and third store acknowledge 
 always @* begin
     if(number_of_store_requests == 2'b10) begin
@@ -604,7 +829,7 @@ always @* begin
     if(l15_transducer_ack) begin
         l15_transducer_ack_received = 1;
     end
-    else if(l15_transducer_val) begin
+    else if(l15_transducer_val & l15_transducer_returntype != `INV_RET) begin
         l15_transducer_ack_received = 0;
     end
     else if(~rst_n) begin
@@ -618,7 +843,7 @@ always @(posedge clk) begin
     if((state_reg == STORE & l15_transducer_ack) | (state_reg == LOAD & l15_transducer_ack)) begin
         transducer_l15_nc_reg <= 0;
     end
-    else if((transducer_l15_rqtype_reg == `STORE_RQ & state_reg == STORE & ~l15_transducer_ack & ~l15_transducer_ack_received) | (transducer_l15_rqtype_reg == `LOAD_RQ & state_reg == LOAD & ~l15_transducer_ack & ~l15_transducer_ack_received)) begin
+    else if((transducer_l15_rqtype_reg == `STORE_RQ & state_reg == STORE & ~l15_transducer_ack & ~l15_transducer_ack_received) | (transducer_l15_rqtype_reg == `LOAD_RQ & state_reg == LOAD & ~l15_transducer_ack & ~l15_transducer_val & ~l15_transducer_ack_received & (alignment_load | (fsm_current_state_load == START_LOAD | fsm_current_state_load == WAITLOOP_LOAD & fsm_next_state_load != END_LOAD)))) begin
         transducer_l15_nc_reg <= 1;
     end
     else if(~rst_n) begin
@@ -628,9 +853,12 @@ end
 //..........................................................................
 
 //always block to assign transducer -> L1.5 signals for different load requests
-always @* begin
-    if(number_of_load_requests == 2'b01 & transducer_l15_rqtype_reg == `LOAD_RQ) begin
+always @(posedge clk) begin
+    if(number_of_load_requests == 2'b01 & transducer_l15_rqtype_reg == `LOAD_RQ & alignment_load) begin
         transducer_l15_address_reg_load <= {8'b0, addr_reg_load};
+    end
+    else if(transducer_l15_rqtype_reg == `LOAD_RQ & ~alignment_load) begin
+        transducer_l15_address_reg_load <= {8'd0, next_load_address};
     end
     else if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
         transducer_l15_address_reg_load <= 0;
@@ -852,7 +1080,7 @@ always @* begin
     if(ao486_transducer_load_req_readburst_do) begin
         req_type_load = LOAD;
     end
-    else if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+    else if((l15_transducer_returntype == `LOAD_RET & l15_transducer_val & alignment_load) | load_fsm_output_done) begin
         req_type_load = 3'b0;
     end
     else if(~rst_n) begin
@@ -992,13 +1220,13 @@ always @(*) begin
     else if(l15_transducer_returntype == `IFILL_RET & l15_transducer_val & (~double_access | double_access_ifill_done)) begin
         state_reg = IDLE;
     end
-    else if(req_type_store == STORE & ifill_response_received & load_response_received & ~l15_transducer_val & new_store_req == 1 & ~double_store_done & ~triple_store_done) begin
+    else if(req_type_store == STORE & ifill_response_received & load_response_received & ~l15_transducer_val & new_store_req & ~double_store_done & ~triple_store_done) begin
         state_reg = STORE;
     end
     else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & (single_store | double_store_done | triple_store_done)) begin
         state_reg = IDLE;
     end
-    else if(req_type_load == LOAD & new_load_req == 1 & ifill_response_received & store_response_received) begin
+    else if(req_type_load == LOAD & new_load_req == 1 & ifill_response_received & store_response_received & (alignment_load | ~load_fsm_output_done)) begin
         state_reg = LOAD;
     end
     else if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
@@ -1032,7 +1260,7 @@ always @(posedge clk) begin
         transducer_l15_rqtype_reg <= `LOAD_RQ;
         load_response_received <= 0;
     end
-    else if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+    else if((l15_transducer_returntype == `LOAD_RET & l15_transducer_val & alignment_load) | load_fsm_output_done) begin
         transducer_l15_rqtype_reg <= 0;
         load_response_received <= 1;
     end
@@ -1056,7 +1284,7 @@ always @(posedge clk) begin
     else if(state_reg == STORE & transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & (next_state_store != STORE)) begin
         transducer_l15_val_reg <= 1'b1;
     end
-    else if(state_reg == LOAD & transducer_l15_rqtype_reg == `LOAD_RQ & ~l15_transducer_header_ack & (next_state_load != LOAD)) begin
+    else if(state_reg == LOAD & transducer_l15_rqtype_reg == `LOAD_RQ & ~l15_transducer_header_ack & (next_state_load != LOAD) & (alignment_load | (fsm_current_state_load != IDLE_LOAD & fsm_next_state_load != END_LOAD & ~load_fsm_output_done))) begin
         transducer_l15_val_reg <= 1'b1;
     end
     else if(~rst_n) begin
@@ -1118,7 +1346,7 @@ always @(posedge clk) begin
             transducer_l15_address_reg_ifill <= {ifill_double_access_first_address[31:5], 5'd0};
             double_access_count <= 2'd0;
         end
-        else if(l15_transducer_header_ack) begin
+        else if(l15_transducer_header_ack & state_reg == IFILL) begin
             transducer_l15_address_reg_ifill <= transducer_l15_address_reg_ifill;
             next_state <= IFILL;
         end
@@ -1155,7 +1383,7 @@ always @(posedge clk) begin
         readburst_length_reg <= ao486_transducer_load_req_readburst_byte_length;
         new_load_req <= 1;
     end
-    else if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+    else if((l15_transducer_returntype == `LOAD_RET & l15_transducer_val & alignment_load) | load_fsm_output_done) begin
         new_load_req <= 0;
         addr_reg_load <= 32'b0;
     end    
@@ -1254,15 +1482,10 @@ always @(posedge clk) begin
             request_size <= 4'b0001;
         end
         else if(number_of_load_requests == 2'b01 & alignment_load) begin
-            if(readburst_length_reg == 4'b0010) begin
-                request_size <= 4'b0010;
-            end
-            else if(readburst_length_reg == 4'b0100) begin
-                request_size <= 4'b0100;
-            end                                                             //add case for 8B load request
-            else if(readburst_length_reg == 4'b1000) begin
-                request_size <= 4'b1000;
-            end
+            request_size <= readburst_length_reg;
+        end
+        else if(~alignment_load) begin
+            request_size <= unaligned_load_size;
         end
     end
 end
