@@ -214,12 +214,15 @@ reg unaligned_load_response_received;
 reg [31:0] unaligned_load_address_reg;
 reg first_unaligned_load_req_initialised;
 reg [63:0] unaligned_load_data;
+reg [6:0] unaligned_load_data_index;
+reg [3:0] concatenate_unaligned_load_data;
 
 reg transducer_l15_nc_reg;
 reg l15_transducer_ack_received;
 
 wire [1:0] counter_ifill_partial;
 wire [2:0] state_wire;
+wire [127:0] unaligned_load_data_flipped;
 //..........................................................................
 
 //Assign statements
@@ -242,6 +245,7 @@ assign transducer_ao486_writeburst_done = writeburst_done_reg;
 
 assign transducer_ao486_readburst_done = readburst_done_reg;
 assign transducer_ao486_readburst_data = readburst_data_reg;
+assign unaligned_load_data_flipped = {l15_transducer_data_1[7:0], l15_transducer_data_1[15:8], l15_transducer_data_1[23:16], l15_transducer_data_1[31:24], l15_transducer_data_1[39:32], l15_transducer_data_1[47:40], l15_transducer_data_1[55:48], l15_transducer_data_1[63:56], l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
 //..........................................................................
 
 //always block to trigger new load request for updating remaining load size 
@@ -332,13 +336,37 @@ always @(*) begin
 end                                
 //..........................................................................
 
-//always block to accumulate data obtained from multiple requests for unaligned loads
+//always block to set unaligned load data index and position of updating data for multiple requests 
 always @* begin
+    unaligned_load_data_index = 0;
+    concatenate_unaligned_load_data = 0;
+    if(~alignment_load & l15_transducer_val & l15_transducer_returntype == `LOAD_RET) begin
+        unaligned_load_data_index = next_load_address[3:0] << 3;
+        concatenate_unaligned_load_data = readburst_length_reg - remaining_load_length;
+    end
+end
+//..........................................................................
+
+//always block to accumulate data obtained from multiple requests for unaligned loads
+always @(posedge clk) begin
     if(~rst_n) begin
-        unaligned_load_data = 0;
+        unaligned_load_data <= 0;
     end
     else if(~alignment_load & l15_transducer_val & l15_transducer_returntype == `LOAD_RET) begin
-        
+        case (unaligned_load_size)
+            4'd1: begin
+                unaligned_load_data[concatenate_unaligned_load_data*8+:8] <= unaligned_load_data_flipped[unaligned_load_data_index+:8];
+            end
+            4'd2: begin
+                unaligned_load_data[concatenate_unaligned_load_data*8+:16] <= unaligned_load_data_flipped[unaligned_load_data_index+:16];
+            end
+            4'd4: begin
+                unaligned_load_data[concatenate_unaligned_load_data*8+:32] <= unaligned_load_data_flipped[unaligned_load_data_index+:32];
+            end
+            4'd8: begin
+                unaligned_load_data[concatenate_unaligned_load_data*8+:64] <= unaligned_load_data_flipped[unaligned_load_data_index+:64];
+            end
+        endcase
     end
 end
 //..........................................................................
@@ -361,9 +389,22 @@ always @(posedge clk) begin
             end
         end
     end
-    /*else if(~alignment_load) begin
-        
-    end*/
+    else if(~alignment_load & load_fsm_output_done) begin
+        case (readburst_length_reg)
+            4'd1: begin
+                readburst_data_reg[load_address_index+:8] <= unaligned_load_data[7:0];
+            end
+            4'd2: begin
+                readburst_data_reg[load_address_index+:16] <= unaligned_load_data[15:0];
+            end
+            4'd4: begin
+                readburst_data_reg[load_address_index+:32] <= unaligned_load_data[31:0];
+            end
+            4'd8: begin
+                readburst_data_reg[load_address_index+:64] <= unaligned_load_data[63:0];
+            end
+        endcase
+    end
     else if(~rst_n) begin
         readburst_data_reg <= 0;
     end
