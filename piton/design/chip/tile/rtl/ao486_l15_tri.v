@@ -66,7 +66,6 @@ module ao486_l15_tri(
 
     input          ao486_transducer_store_req_writeburst_do,
     input [31:0]   ao486_transducer_store_req_writeburst_address,
-    input [1:0]    ao486_transducer_store_req_writeburst_dword_length,
     input [55:0]   ao486_transducer_store_req_writeburst_data,
     input [3:0]    ao486_transducer_store_req_writeburst_length,
 
@@ -105,8 +104,6 @@ module ao486_l15_tri(
 
 //Parameters and reg variables
 localparam IDLE  = 3'b000;
-localparam NEW   = 3'b001;
-localparam BUSY  = 3'b010;
 localparam STORE = 3'b100;
 localparam LOAD  = 3'b011;
 localparam IFILL = 3'b101;
@@ -117,17 +114,16 @@ localparam WAITLOOP_LOAD = 2'b10;
 localparam END_LOAD = 2'b01;
 localparam IDLE_LOAD = 2'b11;
 
-reg [2:0] state_reg;                   //Current state of processor <-> OP interface
-reg [2:0] next_state;              //Next state of processor <-> OP interface
-reg [2:0] req_type;                //Meant for READ/WRITE requests 
-reg [31:0] addr_reg;               //Reg to store address received from ao486 (ao486_transducer_ifill_req_readcode_address)
+reg [2:0] state_reg;                   //Current state of TRI <-> L1.5 interface
+reg [2:0] next_state;
+reg [2:0] req_type;                //Meant for IFILL requests 
+reg [31:0] addr_reg;               //to store ifill address received from ao486 (ao486_transducer_ifill_req_readcode_address)
 reg flop_bus;
 reg int_recv;
 reg ao486_int_reg;
 reg [31:0] transducer_l15_address_reg_ifill;
 reg [4:0] transducer_l15_rqtype_reg;
 reg transducer_l15_val_reg;
-reg transducer_l15_val_next_reg;
 reg transducer_l15_req_ack_reg;
 reg [3:0] returntype_reg;
 reg request_readcode_done_reg;
@@ -211,10 +207,10 @@ reg [31:0] next_load_address;
 reg [3:0] unaligned_load_size;
 reg unaligned_load_new_request;
 reg unaligned_load_response_received;
-reg [31:0] unaligned_load_address_reg;
 reg first_unaligned_load_req_initialised;
 reg [63:0] unaligned_load_data;
 reg [6:0] unaligned_load_data_index;
+reg [6:0] aligned_load_data_index;
 reg [3:0] concatenate_unaligned_load_data;
 
 reg transducer_l15_nc_reg;
@@ -223,6 +219,7 @@ reg l15_transducer_ack_received;
 wire [1:0] counter_ifill_partial;
 wire [2:0] state_wire;
 wire [127:0] unaligned_load_data_flipped;
+wire [127:0] aligned_load_data_flipped;
 //..........................................................................
 
 //Assign statements
@@ -246,6 +243,7 @@ assign transducer_ao486_writeburst_done = writeburst_done_reg;
 assign transducer_ao486_readburst_done = readburst_done_reg;
 assign transducer_ao486_readburst_data = readburst_data_reg;
 assign unaligned_load_data_flipped = {l15_transducer_data_1[7:0], l15_transducer_data_1[15:8], l15_transducer_data_1[23:16], l15_transducer_data_1[31:24], l15_transducer_data_1[39:32], l15_transducer_data_1[47:40], l15_transducer_data_1[55:48], l15_transducer_data_1[63:56], l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
+assign aligned_load_data_flipped = {l15_transducer_data_1[7:0], l15_transducer_data_1[15:8], l15_transducer_data_1[23:16], l15_transducer_data_1[31:24], l15_transducer_data_1[39:32], l15_transducer_data_1[47:40], l15_transducer_data_1[55:48], l15_transducer_data_1[63:56], l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
 //..........................................................................
 
 //always block to trigger new load request for updating remaining load size 
@@ -288,7 +286,7 @@ always @(posedge clk) begin
 end
 //..........................................................................
 
-//always block to flop next address for unlaigned loads
+/*//always block to flop next address for unlaigned loads
 always @(posedge clk) begin
     if(unaligned_load_new_request) begin
         unaligned_load_address_reg <= next_load_address;
@@ -297,7 +295,7 @@ always @(posedge clk) begin
         unaligned_load_address_reg <= 0;
     end
 end
-//..........................................................................
+//..........................................................................*/
 
 //always block to calculate next load address for unaligned load requests
 always @(*) begin
@@ -339,10 +337,14 @@ end
 //always block to set unaligned load data index and position of updating data for multiple requests 
 always @* begin
     unaligned_load_data_index = 0;
+    aligned_load_data_index = 0;
     concatenate_unaligned_load_data = 0;
     if(~alignment_load & l15_transducer_val & l15_transducer_returntype == `LOAD_RET) begin
         unaligned_load_data_index = next_load_address[3:0] << 3;
         concatenate_unaligned_load_data = readburst_length_reg - remaining_load_length;
+    end
+    else if(alignment_load & l15_transducer_val & l15_transducer_returntype == `LOAD_RET) begin
+        aligned_load_data_index = addr_reg_load[3:0] << 3;
     end
 end
 //..........................................................................
@@ -373,21 +375,33 @@ end
 
 //always block to obtain data from load response
 always @(posedge clk) begin
-    if(number_of_load_requests == 2'b01 & alignment_load) begin
-        if(l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
-            if(readburst_length_reg == 4'b0001) begin
-                readburst_data_reg[load_address_index+:8] <= l15_transducer_data_0[7:0];
+    if(number_of_load_requests == 2'b01 & alignment_load & l15_transducer_returntype == `LOAD_RET & l15_transducer_val) begin
+        case (readburst_length_reg) 
+            4'd1: begin
+                readburst_data_reg[load_address_index+:8] <= aligned_load_data_flipped[aligned_load_data_index+:8];                   
             end
-            else if(readburst_length_reg == 4'b0010) begin
-                readburst_data_reg[load_address_index+:16] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]};
+            4'd2: begin
+                readburst_data_reg[load_address_index+:16] <= aligned_load_data_flipped[aligned_load_data_index+:16];
             end
-            else if(readburst_length_reg == 4'b0100) begin
-                readburst_data_reg[load_address_index+:32] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
+            4'd4: begin
+                readburst_data_reg[load_address_index+:32] <= aligned_load_data_flipped[aligned_load_data_index+:32];
             end
-            else if(readburst_length_reg == 4'b1000) begin
-                readburst_data_reg[load_address_index+:64] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
+            4'd8: begin
+                readburst_data_reg[load_address_index+:64] <= aligned_load_data_flipped[aligned_load_data_index+:64];
             end
+        endcase
+        /*if(readburst_length_reg == 4'b0001) begin
+            readburst_data_reg[load_address_index+:8] <= l15_transducer_data_0[7:0];
         end
+        else if(readburst_length_reg == 4'b0010) begin
+            readburst_data_reg[load_address_index+:16] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8]};
+        end
+        else if(readburst_length_reg == 4'b0100) begin
+            readburst_data_reg[load_address_index+:32] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24]};
+        end
+        else if(readburst_length_reg == 4'b1000) begin
+            readburst_data_reg[load_address_index+:64] <= {l15_transducer_data_0[7:0], l15_transducer_data_0[15:8], l15_transducer_data_0[23:16], l15_transducer_data_0[31:24], l15_transducer_data_0[39:32], l15_transducer_data_0[47:40], l15_transducer_data_0[55:48], l15_transducer_data_0[63:56]};
+        end*/
     end
     else if(~alignment_load & load_fsm_output_done) begin
         case (readburst_length_reg)
@@ -397,8 +411,20 @@ always @(posedge clk) begin
             4'd2: begin
                 readburst_data_reg[load_address_index+:16] <= unaligned_load_data[15:0];
             end
+            4'd3: begin
+                readburst_data_reg[load_address_index+:24] <= unaligned_load_data[23:0];
+            end
             4'd4: begin
                 readburst_data_reg[load_address_index+:32] <= unaligned_load_data[31:0];
+            end
+            4'd5: begin
+                readburst_data_reg[load_address_index+:40] <= unaligned_load_data[39:0];
+            end
+            4'd6: begin
+                readburst_data_reg[load_address_index+:48] <= unaligned_load_data[47:0];
+            end
+            4'd7: begin
+                readburst_data_reg[load_address_index+:56] <= unaligned_load_data[55:0];
             end
             4'd8: begin
                 readburst_data_reg[load_address_index+:64] <= unaligned_load_data[63:0];
@@ -517,6 +543,13 @@ end
 
 //always block to decide index at which load data is to be put based on address
 always @* begin
+    load_address_index = 0;
+    if(alignment_load & l15_transducer_val & l15_transducer_returntype == `LOAD_RET) begin
+        load_address_index = addr_reg_load[1:0] << 3;
+    end
+    else if(~alignment_load & load_fsm_output_done) begin
+        load_address_index = addr_reg_load[1:0] << 3;
+    end/*
     case (addr_reg_load[1:0])
         2'b00: begin
             load_address_index = 0;
@@ -530,7 +563,7 @@ always @* begin
         2'b11: begin
             load_address_index = 5'b11000;  
         end
-    endcase
+    endcase*/
 end
 //..........................................................................
 
@@ -1150,6 +1183,7 @@ end
 //Always block to set ifill_index to select instructions to be sent to core                      (verified)
 always @* begin
     if(~double_access & (double_access_count == 0) & reset_ifill_index_counter) begin
+        ifill_index = addr_reg[4:0] << 3;/*
         if(addr_reg[4:0] == 5'd0) begin
             ifill_index = 0;
         end
@@ -1164,9 +1198,10 @@ always @* begin
         end
         else if(addr_reg[4:0] == 5'b10000) begin
             ifill_index = 128;
-        end
+        end*/
     end
     else if(double_access & double_access_count == 2'd1) begin
+        ifill_index = ifill_double_access_first_address[4:0] << 3;/*
         if(ifill_double_access_first_address[4:0] == 5'b10100) begin
             ifill_index = 160; 
         end
@@ -1175,7 +1210,7 @@ always @* begin
         end
         else if(ifill_double_access_first_address[4:0] == 5'b11100) begin
             ifill_index = 224;
-        end
+        end*/
     end
     else if(~rst_n) begin
         ifill_index = 0;
