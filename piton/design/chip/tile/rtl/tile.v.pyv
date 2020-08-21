@@ -1109,7 +1109,6 @@ if (TILE_TYPE == `AO486_TILE) begin : g_ao486_core
     wire                           ao486_transducer_ifill_req_readcode_do;
     wire [31:0]                    ao486_transducer_store_req_writeburst_address;
     wire                           ao486_transducer_store_req_writeburst_do;
-    wire [1:0]                     ao486_transducer_store_req_writeburst_dword_length;
     wire [55:0]                    ao486_transducer_store_req_writeburst_data;
     wire [3:0]                     ao486_transducer_store_req_writeburst_length;
     wire [31:0]                    ao486_transducer_load_req_readburst_address;
@@ -1185,7 +1184,6 @@ if (TILE_TYPE == `AO486_TILE) begin : g_ao486_core
         .ifill_req_readcode_address        (ao486_transducer_ifill_req_readcode_address),
         .store_req_writeburst_do           (ao486_transducer_store_req_writeburst_do),
         .store_req_writeburst_address      (ao486_transducer_store_req_writeburst_address),
-        .store_req_writeburst_dword_length (ao486_transducer_store_req_writeburst_dword_length),
         .store_req_writeburst_data         (ao486_transducer_store_req_writeburst_data),
         .store_req_writeburst_length       (ao486_transducer_store_req_writeburst_length),
         .load_req_readburst_do             (ao486_transducer_load_req_readburst_do),
@@ -1242,7 +1240,6 @@ if (TILE_TYPE == `AO486_TILE) begin : g_ao486_core
         .ao486_transducer_ifill_req_readcode_address        (ao486_transducer_ifill_req_readcode_address),
         .ao486_transducer_store_req_writeburst_do           (ao486_transducer_store_req_writeburst_do),
         .ao486_transducer_store_req_writeburst_address      (ao486_transducer_store_req_writeburst_address),
-        .ao486_transducer_store_req_writeburst_dword_length (ao486_transducer_store_req_writeburst_dword_length),
         .ao486_transducer_store_req_writeburst_data         (ao486_transducer_store_req_writeburst_data),
         .ao486_transducer_store_req_writeburst_length       (ao486_transducer_store_req_writeburst_length),
         .ao486_transducer_load_req_readburst_do             (ao486_transducer_load_req_readburst_do),
