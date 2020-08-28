@@ -100,7 +100,6 @@ module ao486_l15_tri(
     assign transducer_l15_data_next_entry = 64'b0;
     assign transducer_l15_amo_op = 4'd0;
     assign transducer_l15_l1rplway = 2'd0;
-    assign transducer_ao486_writeline_done = 0;
     
 //Tying off unused transducer_l15_ signals for ao486 to zero
     assign transducer_l15_blockinitstore = 1'b0;
@@ -175,9 +174,9 @@ reg store_response_received;
 reg [39:0] transducer_l15_address_reg_store;
 reg [2:0] next_state_store;
 reg writeburst_done_reg;
-reg [2:0] store_length_1;
-reg [2:0] store_length_2;
-reg [2:0] store_length_3;
+reg [3:0] store_length_1;
+reg [3:0] store_length_2;
+reg [3:0] store_length_3;
 reg [31:0] store_address_1;
 reg [31:0] store_address_2;
 reg [31:0] store_address_3;
@@ -191,6 +190,11 @@ reg [2:0] aligned_store_index;
 reg [1:0] unaligned_store_req_count;
 reg double_store_done;
 reg triple_store_done;
+reg store_line;
+reg store_line_reg;
+reg writeline_done_reg;
+reg [127:0] writeline_line_flipped_reg;
+reg [127:0] writeline_line_reg;
 
 reg flop_bus_load;
 reg [31:0] addr_reg_load;
@@ -252,6 +256,7 @@ assign transducer_l15_data = transducer_l15_data_reg;
 assign transducer_l15_nc = transducer_l15_nc_reg;
 
 assign transducer_ao486_writeburst_done = writeburst_done_reg;
+assign transducer_ao486_writeline_done = writeline_done_reg;
 
 assign transducer_ao486_readburst_done = readburst_done_reg;
 assign transducer_ao486_readburst_data = readburst_data_reg;
@@ -616,80 +621,91 @@ end
 //always block to decide number of store requests required to be sent to L1.5 
 always @(posedge clk) begin
     if(new_store_req) begin
-        case (writeburst_length_reg)
-            3'b001: begin
-                number_of_store_requests <= 2'b01;
-                alignment_store <= ALIGNED_STORE;
-            end
-            3'b010: begin
-                if(~addr_reg_store[0]) begin
-                    alignment_store <= ALIGNED_STORE;
+        if(~store_line_reg) begin
+            case (writeburst_length_reg)
+                3'b001: begin
                     number_of_store_requests <= 2'b01;
-                end
-                else if(addr_reg_store[0]) begin
-                    $display("Unaligned store with 2 requests");
-                    alignment_store <= UNALIGNED_STORE;
-                    number_of_store_requests <= 2'b10;
-                    store_length_1 <= 3'b001;
-                    store_length_2 <= 3'b001;
-                    store_address_1 <= addr_reg_store;
-                    store_address_2 <= addr_reg_store + 1'b1;
-                end
-            end
-            3'b011: begin                          
-                alignment_store <= UNALIGNED_STORE;
-                $display("Unaligned store with 2 requests");
-                number_of_store_requests = 2'b10;
-                store_address_1 <= addr_reg_store;
-                if(~addr_reg_store[0]) begin
-                    store_length_1 <= 3'b010;
-                    store_address_2 <= addr_reg_store + 2'b10;
-                    store_length_2 <= 3'b001;
-                end
-                else if(addr_reg_store[0]) begin
-                    store_length_1 <= 3'b001;
-                    store_length_2 <= 3'b010;
-                    store_address_2 <= addr_reg_store + 1'b1;
-                end
-            end
-            3'b100: begin
-                if(addr_reg_store[1:0] == 2'b0) begin
                     alignment_store <= ALIGNED_STORE;
-                    number_of_store_requests <= 2'b01;
                 end
-                else if(addr_reg_store[1:0] == 2'b01) begin
-                    alignment_store <= UNALIGNED_STORE;
-                    $display("Unaligned store with 3 requests");
-                    number_of_store_requests <= 2'b11;
-                    store_length_1 <= 3'b001;
-                    store_length_2 <= 3'b010;
-                    store_length_3 <= 3'b001;
-                    store_address_1 <= addr_reg_store;
-                    store_address_2 <= addr_reg_store + 1'b1;
-                    store_address_3 <= addr_reg_store + 2'b11;
+                3'b010: begin
+                    if(~addr_reg_store[0]) begin
+                        alignment_store <= ALIGNED_STORE;
+                        number_of_store_requests <= 2'b01;
+                    end
+                    else if(addr_reg_store[0]) begin
+                        $display("Unaligned store with 2 requests");
+                        alignment_store <= UNALIGNED_STORE;
+                        number_of_store_requests <= 2'b10;
+                        store_length_1 <= 4'b0001;
+                        store_length_2 <= 4'b0001;
+                        store_address_1 <= addr_reg_store;
+                        store_address_2 <= addr_reg_store + 1'b1;
+                    end
                 end
-                else if(addr_reg_store[1:0] == 2'b10) begin
+                3'b011: begin                          
                     alignment_store <= UNALIGNED_STORE;
-                    number_of_store_requests <= 2'b10;
                     $display("Unaligned store with 2 requests");
-                    store_length_1 <= 3'b010;
-                    store_length_2 <= 3'b010;
+                    number_of_store_requests = 2'b10;
                     store_address_1 <= addr_reg_store;
-                    store_address_2 <= addr_reg_store + 2'b10;
+                    if(~addr_reg_store[0]) begin
+                        store_length_1 <= 4'b0010;
+                        store_address_2 <= addr_reg_store + 2'b10;
+                        store_length_2 <= 4'b0001;
+                    end
+                    else if(addr_reg_store[0]) begin
+                        store_length_1 <= 4'b0001;
+                        store_length_2 <= 4'b0010;
+                        store_address_2 <= addr_reg_store + 1'b1;
+                    end
                 end
-                else if(addr_reg_store[1:0] == 2'b11) begin
-                    alignment_store <= UNALIGNED_STORE;
-                    number_of_store_requests <= 2'b11;
-                    $display("Unaligned store with 3 requests");
-                    store_length_1 <= 3'b001;
-                    store_length_2 <= 3'b010;
-                    store_length_3 <= 3'b001;
-                    store_address_1 <= addr_reg_store;
-                    store_address_2 <= addr_reg_store + 1'b1;
-                    store_address_3 <= addr_reg_store + 2'b11;
+                3'b100: begin
+                    if(addr_reg_store[1:0] == 2'b0) begin
+                        alignment_store <= ALIGNED_STORE;
+                        number_of_store_requests <= 2'b01;
+                    end
+                    else if(addr_reg_store[1:0] == 2'b01) begin
+                        alignment_store <= UNALIGNED_STORE;
+                        $display("Unaligned store with 3 requests");
+                        number_of_store_requests <= 2'b11;
+                        store_length_1 <= 4'b0001;
+                        store_length_2 <= 4'b0010;
+                        store_length_3 <= 4'b0001;
+                        store_address_1 <= addr_reg_store;
+                        store_address_2 <= addr_reg_store + 1'b1;
+                        store_address_3 <= addr_reg_store + 2'b11;
+                    end
+                    else if(addr_reg_store[1:0] == 2'b10) begin
+                        alignment_store <= UNALIGNED_STORE;
+                        number_of_store_requests <= 2'b10;
+                        $display("Unaligned store with 2 requests");
+                        store_length_1 <= 4'b0010;
+                        store_length_2 <= 4'b0010;
+                        store_address_1 <= addr_reg_store;
+                        store_address_2 <= addr_reg_store + 2'b10;
+                    end
+                    else if(addr_reg_store[1:0] == 2'b11) begin
+                        alignment_store <= UNALIGNED_STORE;
+                        number_of_store_requests <= 2'b11;
+                        $display("Unaligned store with 3 requests");
+                        store_length_1 <= 4'b0001;
+                        store_length_2 <= 4'b0010;
+                        store_length_3 <= 4'b0001;
+                        store_address_1 <= addr_reg_store;
+                        store_address_2 <= addr_reg_store + 1'b1;
+                        store_address_3 <= addr_reg_store + 2'b11;
+                    end
                 end
-            end
-        endcase
+            endcase
+        end
+        else begin
+            alignment_store <= UNALIGNED_STORE;
+            number_of_store_requests <= 2'b10;
+            $display("Unaligned store with 2 requests (line-type)");
+            store_address_1 <= addr_reg_store;
+            store_address_2 <= addr_reg_store + 4'b1000;
+            store_length_1 <= 4'b1000;
+            store_length_2 <= 4'b1000;
+        end
     end
     else if(~rst_n) begin
         number_of_store_requests <= 2'b00;
@@ -722,49 +738,64 @@ always @(*) begin
     end
     else if(number_of_store_requests == 2'b10 & transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
         double_store = 1;
-        if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
-            case (store_length_1)
-                3'b100: begin
-                    transducer_l15_data_reg = {2{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:32]}};
-                end
-                3'b010: begin
-                    transducer_l15_data_reg = {4{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:16]}};
-                end
-                3'b001: begin
-                    transducer_l15_data_reg = {8{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:8]}};
-                end
-            endcase
-        end
-        else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
-            if(~second_store_ack) begin
-                case (store_length_2)
-                    3'b100: begin
-                        transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:32]}};
+        if(~store_line_reg) begin
+            if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+                case (store_length_1)
+                    4'b0100: begin
+                        transducer_l15_data_reg = {2{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:32]}};
                     end
-                    3'b010: begin
-                        transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:16]}};
+                    4'b0010: begin
+                        transducer_l15_data_reg = {4{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:16]}};
                     end
-                    3'b001: begin
-                        transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:8]}};
+                    4'b0001: begin
+                        transducer_l15_data_reg = {8{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:8]}};
                     end
                 endcase
             end
-            else begin
-                transducer_l15_data_reg = 0;
+            else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+                if(~second_store_ack) begin
+                    case (store_length_2)
+                        4'b0100: begin
+                            transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:32]}};
+                        end
+                        4'b0010: begin
+                            transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:16]}};
+                        end
+                        4'b0001: begin
+                            transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:8]}};
+                        end
+                    endcase
+                end
+                else begin
+                    transducer_l15_data_reg = 0;
+                end
+            end                        
+        end
+        else begin
+            if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+                transducer_l15_data_reg = writeline_line_flipped_reg[63:0];
             end
-        end                        
+            else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
+                if(~second_store_ack) begin
+                    transducer_l15_data_reg = writeline_line_flipped_reg[127:64];
+                end
+                else begin
+                    transducer_l15_data_reg = 0;
+                end
+            end
+        end
     end
     else if(number_of_store_requests == 2'b11 & transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack) begin
         triple_store = 1;
         if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
             case (store_length_1)
-                3'b100: begin
+                4'b0100: begin
                     transducer_l15_data_reg = {2{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:32]}};
                 end
-                3'b010: begin
+                4'b0010: begin
                     transducer_l15_data_reg = {4{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:16]}};
                 end
-                3'b001: begin
+                4'b0001: begin
                     transducer_l15_data_reg = {8{writeburst_flipped_data_reg[(aligned_store_index*8-1'b1)-:8]}};
                 end
             endcase
@@ -772,26 +803,26 @@ always @(*) begin
         else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
             if(~second_store_ack) begin
                 case (store_length_2)
-                    3'b100: begin
+                    4'b0100: begin
                         transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:32]}};
                     end
-                    3'b010: begin
+                    4'b0010: begin
                         transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:16]}};
                     end
-                    3'b001: begin
+                    4'b0001: begin
                         transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - store_length_1*8)-:8]}};
                     end
                 endcase
             end
             else if(~third_store_ack) begin
                 case (store_length_3) 
-                    3'b100: begin
+                    4'b0100: begin
                         transducer_l15_data_reg = {2{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - (store_length_1+store_length_2)*8)-:32]}};
                     end
-                    3'b010: begin
+                    4'b0010: begin
                         transducer_l15_data_reg = {4{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - (store_length_1+store_length_2)*8)-:16]}};
                     end
-                    3'b001: begin
+                    4'b0001: begin
                         transducer_l15_data_reg = {8{writeburst_flipped_data_reg[((aligned_store_index*8-1'b1) - (store_length_1+store_length_2)*8)-:8]}};
                     end
                 endcase
@@ -873,10 +904,16 @@ always @(posedge clk) begin
     end
     else if(number_of_store_requests == 2'b10) begin
         if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & first_store_ack) begin
-            writeburst_done_reg <= 1;
+            if(~store_line_reg) begin
+                writeburst_done_reg <= 1;
+            end
+            else begin
+                writeline_done_reg <= 1;
+            end
         end
         else begin
             writeburst_done_reg <= 0;
+            writeline_done_reg <= 0;
         end
     end
     else if(number_of_store_requests == 2'b11) begin
@@ -889,6 +926,7 @@ always @(posedge clk) begin
     end
     else if(~rst_n) begin
         writeburst_done_reg <= 0;
+        writeline_done_reg <= 0;
     end
 end
 //..........................................................................
@@ -912,7 +950,7 @@ always @(posedge clk) begin
     if((state_reg == STORE & l15_transducer_ack) | (state_reg == LOAD & l15_transducer_ack)) begin
         transducer_l15_nc_reg <= 0;
     end
-    else if((transducer_l15_rqtype_reg == `STORE_RQ & state_reg == STORE & ~l15_transducer_ack & ~l15_transducer_ack_received) | (transducer_l15_rqtype_reg == `LOAD_RQ & ~load_line_reg & state_reg == LOAD & ~l15_transducer_ack & ~l15_transducer_val & ~l15_transducer_ack_received & (alignment_load | (fsm_current_state_load == START_LOAD | fsm_current_state_load == WAITLOOP_LOAD & fsm_next_state_load != END_LOAD)))) begin
+    else if((transducer_l15_rqtype_reg == `STORE_RQ & state_reg == STORE & ~l15_transducer_ack & ~l15_transducer_ack_received & ~store_line_reg) | (transducer_l15_rqtype_reg == `LOAD_RQ & ~load_line_reg & state_reg == LOAD & ~l15_transducer_ack & ~l15_transducer_val & ~l15_transducer_ack_received & (alignment_load | (fsm_current_state_load == START_LOAD | fsm_current_state_load == WAITLOOP_LOAD & fsm_next_state_load != END_LOAD)))) begin
         transducer_l15_nc_reg <= 1;
     end
     else if(~rst_n) begin
@@ -1131,7 +1169,12 @@ always @* begin
     if(ao486_transducer_store_req_writeburst_do) begin
         flop_bus_store = 1'b1;
     end
+    else if(ao486_transducer_store_req_writeline_do) begin
+        flop_bus_store = 1;
+        store_line = 1;
+    end
     else begin
+        store_line = 0;
         flop_bus_store = 0;
     end
 end
@@ -1145,7 +1188,7 @@ always @* begin
     else if(l15_transducer_returntype == `IFILL_RET & l15_transducer_val & (~double_access | double_access_ifill_done)) begin
         req_type = 3'b0;
     end
-    if(ao486_transducer_store_req_writeburst_do) begin
+    if(ao486_transducer_store_req_writeburst_do | ao486_transducer_store_req_writeline_do) begin
         req_type_store = STORE;
     end
     else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
@@ -1439,6 +1482,7 @@ always @(posedge clk) begin
         else begin
             addr_reg_load <= ao486_transducer_load_req_readburst_address;
             readburst_length_reg <= ao486_transducer_load_req_readburst_byte_length;
+            load_line_reg <= 0;
         end
     end
     else if((l15_transducer_returntype == `LOAD_RET & l15_transducer_val & alignment_load) | load_fsm_output_done) begin
@@ -1456,18 +1500,23 @@ always @(posedge clk) begin
         writeburst_flipped_data_reg <= 0;
     end
     else if(new_store_req) begin
-        writeburst_flipped_data_reg <= {writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[23:16], writeburst_data_reg[31:24], writeburst_data_reg[39:32], writeburst_data_reg[47:40], writeburst_data_reg[55:48]};
-        if(addr_reg_store[1:0] == 0) begin
-            aligned_store_index <= 3'b111;
-        end
-        else if(addr_reg_store[1:0] == 2'b01) begin
-            aligned_store_index <= 3'b110;
-        end
-        else if(addr_reg_store[1:0] == 2'b10) begin
-            aligned_store_index <= 3'b101;
+        if(~store_line_reg) begin
+            writeburst_flipped_data_reg <= {writeburst_data_reg[7:0], writeburst_data_reg[15:8], writeburst_data_reg[23:16], writeburst_data_reg[31:24], writeburst_data_reg[39:32], writeburst_data_reg[47:40], writeburst_data_reg[55:48]};
+            if(addr_reg_store[1:0] == 0) begin
+                aligned_store_index <= 3'b111;
+            end
+            else if(addr_reg_store[1:0] == 2'b01) begin
+                aligned_store_index <= 3'b110;
+            end
+            else if(addr_reg_store[1:0] == 2'b10) begin
+                aligned_store_index <= 3'b101;
+            end
+            else begin
+                aligned_store_index <= 3'b100;
+            end
         end
         else begin
-            aligned_store_index <= 3'b100;
+            writeline_line_flipped_reg <= {writeline_line_reg[7:0], writeline_line_reg[15:8], writeline_line_reg[23:16], writeline_line_reg[31:24], writeline_line_reg[39:32], writeline_line_reg[47:40], writeline_line_reg[55:48], writeline_line_reg[63:56], writeline_line_reg[71:64], writeline_line_reg[79:72], writeline_line_reg[87:80], writeline_line_reg[95:88], writeline_line_reg[103:96], writeline_line_reg[111:104], writeline_line_reg[119:112], writeline_line_reg[127:120]};
         end
     end
 end
@@ -1480,15 +1529,25 @@ always @(posedge clk) begin
         writeburst_data_reg <= 56'd0;
         writeburst_length_reg <= 3'd0;
         new_store_req <= 0;
+        store_line_reg <= 0;
     end
     else if(flop_bus_store) begin
-        addr_reg_store <= ao486_transducer_store_req_writeburst_address;
-        writeburst_data_reg <= ao486_transducer_store_req_writeburst_data;
-        writeburst_length_reg <= ao486_transducer_store_req_writeburst_length[2:0];
         new_store_req <= 1'b1;
+        if(~store_line) begin
+            addr_reg_store <= ao486_transducer_store_req_writeburst_address;
+            writeburst_data_reg <= ao486_transducer_store_req_writeburst_data;
+            writeburst_length_reg <= ao486_transducer_store_req_writeburst_length[2:0];
+            store_line_reg <= 0;
+        end
+        else begin
+            addr_reg_store <= ao486_transducer_store_req_writeline_address;
+            store_line_reg <= 1;
+            writeline_line_reg <= ao486_transducer_store_req_writeline_line;
+        end
     end
     else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
         new_store_req <= 0;
+        store_line_reg <= 0;
         if(number_of_store_requests == 2'b01) begin
             addr_reg_store <= 0;
         end
@@ -1515,23 +1574,28 @@ always @(posedge clk) begin
             request_size <= 5'b00100;
         end
         else if(double_store) begin
-            if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
-                request_size <= {2'b0, store_length_1};
+            if(~store_line_reg) begin
+                if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
+                    request_size <= {1'b0, store_length_1};
+                end
+                else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~second_store_ack) begin
+                    request_size <= {1'b0, store_length_2};
+                end
             end
-            else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val & ~second_store_ack) begin
-                request_size <= {2'b0, store_length_2};
+            else begin
+                request_size <= 5'b01000;
             end
         end
         else if(triple_store) begin
             if(transducer_l15_rqtype_reg == `STORE_RQ & ~l15_transducer_header_ack & next_state_store != STORE & ~first_store_ack) begin
-                request_size <= {2'b0, store_length_1};
+                request_size <= {1'b0, store_length_1};
             end
             else if(l15_transducer_returntype == `ST_ACK & l15_transducer_val) begin
                 if(~second_store_ack) begin
-                    request_size <= {2'b0, store_length_2};
+                    request_size <= {1'b0, store_length_2};
                 end
                 else if(~third_store_ack) begin
-                    request_size <= {2'b0, store_length_3};
+                    request_size <= {1'b0, store_length_3};
                 end
             end
         end
