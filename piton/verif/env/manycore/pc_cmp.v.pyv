@@ -263,7 +263,7 @@ endtask // get_thread_status
 
                 always @*
                 begin
-                    if (`AO486_CORE0.ao486_int == 1'b1)
+                    if (`AO486_CORE0.rst_n == 1'b1)
                     begin
                         active_thread[(0*4)] = 1'b1;
                         active_thread[(0*4)+1] = 1'b1;
