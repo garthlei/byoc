@@ -148,7 +148,7 @@ def gen_riscv_dts(devices, nCpus, cpuFreq, timeBaseFreq, periphFreq, dtsPath, ti
         core = "BlackParrot"
         plat_compat = "bsg,blackparrot-bare-dev"
         core_compat = "bsg, blackparrot"
-        core_isa = "rv64ima"
+        core_isa = "rv64imafd"
         soc_compat = "bsg,blackparrot-bare-soc"
 
     # get UART base
