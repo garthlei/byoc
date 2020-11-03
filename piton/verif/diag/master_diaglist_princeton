@@ -156,6 +156,27 @@ pico-amoxor     amoxor_w.S
         blackparrot-rv64um-p-remu      rv64um-p-remu.riscv
         blackparrot-rv64um-p-remw      rv64um-p-remw.riscv
         blackparrot-rv64um-p-remuw     rv64um-p-remuw.riscv
+        blackparrot-rv64uf-p-fadd      rv64uf-p-fadd.riscv
+        blackparrot-rv64uf-p-fclass    rv64uf-p-fclass.riscv
+        blackparrot-rv64uf-p-fcmp      rv64uf-p-fcmp.riscv
+        blackparrot-rv64uf-p-fcvt      rv64uf-p-fcvt.riscv
+        blackparrot-rv64uf-p-fcvt_w    rv64uf-p-fcvt_w.riscv
+        blackparrot-rv64uf-p-fdiv      rv64uf-p-fdiv.riscv
+        blackparrot-rv64uf-p-fmadd     rv64uf-p-fmadd.riscv
+        blackparrot-rv64uf-p-fmin      rv64uf-p-fmin.riscv
+        blackparrot-rv64uf-p-ldst      rv64uf-p-ldst.riscv
+        blackparrot-rv64uf-p-move      rv64uf-p-move.riscv
+        blackparrot-rv64uf-p-recoding  rv64uf-p-recoding.riscv
+        blackparrot-rv64ud-p-fadd      rv64ud-p-fadd.riscv
+        blackparrot-rv64ud-p-fclass    rv64ud-p-fclass.riscv
+        blackparrot-rv64ud-p-fcmp      rv64ud-p-fcmp.riscv
+        blackparrot-rv64ud-p-fcvt      rv64ud-p-fcvt.riscv
+        blackparrot-rv64ud-p-fcvt_w    rv64ud-p-fcvt_w.riscv
+        blackparrot-rv64ud-p-fdiv      rv64ud-p-fdiv.riscv
+        blackparrot-rv64ud-p-fmadd     rv64ud-p-fmadd.riscv
+        blackparrot-rv64ud-p-fmin      rv64ud-p-fmin.riscv
+        blackparrot-rv64ud-p-ldst      rv64ud-p-ldst.riscv
+        blackparrot-rv64ud-p-move      rv64ud-p-move.riscv
         </runargs>
     </blackparrot_tile1_asm_tests_p>
     
@@ -217,6 +238,60 @@ pico-amoxor     amoxor_w.S
         </runargs>
     </blackparrot_tile1_asm_tests_v>
 
+    <blackparrot_tile1_asm_tests_pt>
+        <runargs -x_tiles=1 -y_tiles=1 -blackparrot -precompiled>
+        blackparrot-rv64ui-pt-add       rv64ui-pt-add.riscv
+        blackparrot-rv64ui-pt-addi      rv64ui-pt-addi.riscv
+        blackparrot-rv64ui-pt-addiw     rv64ui-pt-addiw.riscv
+        blackparrot-rv64ui-pt-addw      rv64ui-pt-addw.riscv
+        blackparrot-rv64ui-pt-and       rv64ui-pt-and.riscv
+        blackparrot-rv64ui-pt-andi      rv64ui-pt-andi.riscv
+        blackparrot-rv64ui-pt-auipc     rv64ui-pt-auipc.riscv
+        blackparrot-rv64ui-pt-beq       rv64ui-pt-beq.riscv
+        blackparrot-rv64ui-pt-bge       rv64ui-pt-bge.riscv
+        blackparrot-rv64ui-pt-bgeu      rv64ui-pt-bgeu.riscv
+        blackparrot-rv64ui-pt-blt       rv64ui-pt-blt.riscv
+        blackparrot-rv64ui-pt-bltu      rv64ui-pt-bltu.riscv
+        blackparrot-rv64ui-pt-bne       rv64ui-pt-bne.riscv
+        blackparrot-rv64ui-pt-jal       rv64ui-pt-jal.riscv
+        blackparrot-rv64ui-pt-jalr      rv64ui-pt-jalr.riscv
+        blackparrot-rv64ui-pt-lb        rv64ui-pt-lb.riscv
+        blackparrot-rv64ui-pt-lbu       rv64ui-pt-lbu.riscv
+        blackparrot-rv64ui-pt-ld        rv64ui-pt-ld.riscv
+        blackparrot-rv64ui-pt-lh        rv64ui-pt-lh.riscv
+        blackparrot-rv64ui-pt-lhu       rv64ui-pt-lhu.riscv
+        blackparrot-rv64ui-pt-lui       rv64ui-pt-lui.riscv
+        blackparrot-rv64ui-pt-lw        rv64ui-pt-lw.riscv
+        blackparrot-rv64ui-pt-lwu       rv64ui-pt-lwu.riscv
+        blackparrot-rv64ui-pt-or        rv64ui-pt-or.riscv
+        blackparrot-rv64ui-pt-ori       rv64ui-pt-ori.riscv
+        blackparrot-rv64ui-pt-sb        rv64ui-pt-sb.riscv
+        blackparrot-rv64ui-pt-sd        rv64ui-pt-sd.riscv
+        blackparrot-rv64ui-pt-sh        rv64ui-pt-sh.riscv
+        blackparrot-rv64ui-pt-sw        rv64ui-pt-sw.riscv
+        blackparrot-rv64ui-pt-sll       rv64ui-pt-sll.riscv
+        blackparrot-rv64ui-pt-slli      rv64ui-pt-slli.riscv
+        blackparrot-rv64ui-pt-slliw     rv64ui-pt-slliw.riscv
+        blackparrot-rv64ui-pt-sllw      rv64ui-pt-sllw.riscv
+        blackparrot-rv64ui-pt-slt       rv64ui-pt-slt.riscv
+        blackparrot-rv64ui-pt-slti      rv64ui-pt-slti.riscv
+        blackparrot-rv64ui-pt-sltiu     rv64ui-pt-sltiu.riscv
+        blackparrot-rv64ui-pt-sltu      rv64ui-pt-sltu.riscv
+        blackparrot-rv64ui-pt-sra       rv64ui-pt-sra.riscv
+        blackparrot-rv64ui-pt-srai      rv64ui-pt-srai.riscv
+        blackparrot-rv64ui-pt-sraiw     rv64ui-pt-sraiw.riscv
+        blackparrot-rv64ui-pt-sraw      rv64ui-pt-sraw.riscv
+        blackparrot-rv64ui-pt-srl       rv64ui-pt-srl.riscv
+        blackparrot-rv64ui-pt-srli      rv64ui-pt-srli.riscv
+        blackparrot-rv64ui-pt-srliw     rv64ui-pt-srliw.riscv
+        blackparrot-rv64ui-pt-srlw      rv64ui-pt-srlw.riscv
+        blackparrot-rv64ui-pt-sub       rv64ui-pt-sub.riscv
+        blackparrot-rv64ui-pt-subw      rv64ui-pt-subw.riscv
+        blackparrot-rv64ui-pt-xor       rv64ui-pt-xor.riscv
+        blackparrot-rv64ui-pt-xori      rv64ui-pt-xori.riscv
+        </runargs>
+    </blackparrot_tile1_asm_tests_pt>
+    
     // note: these asm tests assume that the RISCV tests have been precompiled with the
     // correct environment
     <blackparrot_tile1_amo_tests_p>
@@ -242,6 +317,18 @@ pico-amoxor     amoxor_w.S
         blackparrot-rv64ua-p-lrsc      rv64ua-p-lrsc.riscv
         </runargs>
     </blackparrot_tile1_amo_tests_p>
+
+    <blackparrot_tile1_riscv_benchmarks>
+        <runargs -x_tiles=1 -y_tiles=1 -blackparrot -precompiled>
+        blackparrot-median       median.riscv
+        blackparrot-multiply     mulitply.riscv
+        blackparrot-qsort        qsort.riscv
+        blackparrot-rsort        rsort.riscv
+        blackparrot-towers       towers.riscv
+        blackparrot-vvadd        vvadd.riscv
+        blackparrot-dhrystone    dhrystone.riscv
+        </runargs>
+    </blackparrot_tile1_riscv_benchmarks>
 </cmp_default>
 </blackparrot_tile1>
 
