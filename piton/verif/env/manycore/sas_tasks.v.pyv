@@ -742,7 +742,7 @@ initial begin
     swap         = 0;
 end // initial begin
 
-`ifndef NO_MRA_VAL
+`ifdef OST1_PLI_MRA_VAL
 //mra memory contets
 task mra_val;
     input [9:0] cpu;
@@ -878,7 +878,7 @@ task mra_val;
         endcase // case(cpu)
     end
 endtask // mra_val
-`endif // endif NO_MRA_VAL
+`endif // endif OST1_PLI_MRA_VAL
 reg timestamp, timest;
 reg [63:0] time_stamp;
 reg         pli_flag;
@@ -900,7 +900,7 @@ always @(posedge clk)begin
         <%
             t = r'''
                  `ifdef RTL_SPARC0
-                `SAS_TASKS.task0.process;
+                `SAS_TASKS.task0.process_task;
                   `endif
             '''
             tt = ReplicatePatternSpecial(t, ["RTL_SPARC0", "task0"])
