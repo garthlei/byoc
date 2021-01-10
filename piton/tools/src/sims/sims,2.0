@@ -2754,8 +2754,9 @@ sub parse_args
     $opt{rv32} = 1 ;
     print "$prg: Building/running for rv32\n" ;
   }
-  if ($opt{ariane}) {
+  if ($opt{ariane} || $opt{blackparrot}) {
     $opt{rv64} = 1 ;
+    $opt{rv64_platform} = 1 ;
     print "$prg: Building/running for rv64\n" ;
   }
 

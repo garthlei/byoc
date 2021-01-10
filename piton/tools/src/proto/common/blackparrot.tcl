@@ -22,28 +22,26 @@ set BLACKPARROT_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_pkg.vh" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_calculator_top.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_common/src/include/bp_common_cfg_link_pkg.vh" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_checker/bp_be_checker_top.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_csr.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache/bp_be_dcache_wbuf_entry.vh" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache/bp_be_dcache_pkt.vh" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache/bp_be_dcache_pkg.vh" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_wbuf_entry.vh" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_pkt.vh" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_pkg.vh" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_pipeline.vh" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_lce.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_lce_cmd.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_lce_req.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_decoder.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_wbuf.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_wbuf_queue.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_checker/bp_be_detector.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_checker/bp_be_director.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_instr_decoder.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_int_alu.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_mem_top.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_ctrl.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_fp.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_int.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_long.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_mem.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_mul.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_sys.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_ptw.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_regfile.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_checker/bp_be_scheduler.v" \
@@ -86,19 +84,18 @@ set BLACKPARROT_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/include/bp_fe_pkg.vh" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_core.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_core_complex.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/include/bp_fe_lce.vh" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/include/bp_fe_icache_pkg.vh" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_core_minimal.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_bht.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_btb.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_icache.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_instr_scan.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_lce.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_lce_cmd.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_lce_req.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_mem.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_pc_gen.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_top.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/lce/bp_lce.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/lce/bp_lce_req.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/lce/bp_lce_cmd.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/cce/bp_pce.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/cce/bp_io_cce.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_io_complex.v" \
@@ -126,13 +123,15 @@ set BLACKPARROT_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_mem_complex.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_nd_socket.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_common/src/v/bp_pma.v" \
-    "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_processor.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_multicore.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_unicore.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_sacc_complex.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_tile.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_tile_node.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_piton_top.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/bp_common/src/v/bp_tlb.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_arb_fixed.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_adder_one_hot.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_array_concentrate_static.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_array_reverse.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_async/bsg_async_fifo.v" \
@@ -159,6 +158,7 @@ set BLACKPARROT_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_counter_set_down.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_counter_set_en.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_counter_up_down.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_counter_up_down_variable.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_crossbar_o_by_i.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_decode.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_decode_with_v.v" \
@@ -166,8 +166,10 @@ set BLACKPARROT_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_chain.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_en.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_en_bypass.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset_en_bypass.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset_en.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset_set_clear.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dlatch.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_edge_detect.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_encode_one_hot.v" \
@@ -212,6 +214,8 @@ set BLACKPARROT_RTL_IMPL_FILES [list \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_priority_encode_one_hot_out.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_reduce.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_reduce_segmented.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_rotate_left.v" \
+    "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_rotate_right.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_dataflow/bsg_round_robin_1_to_n.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_round_robin_arb.v" \
     "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_dataflow/bsg_round_robin_n_to_1.v" \
@@ -337,27 +341,27 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_common/src/include/bp_commo
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_checker/bp_be_checker_top.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
 set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_csr.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache/bp_be_dcache_wbuf_entry.vh"
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_wbuf_entry.vh"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache/bp_be_dcache_pkt.vh"
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_pkt.vh"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache/bp_be_dcache_pkg.vh"
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_pkg.vh"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/include/bp_be_dcache_pipeline.vh"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -367,17 +371,7 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dc
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_lce.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_lce_cmd.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_lce_req.v"
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_dcache/bp_be_dcache_decoder.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -412,11 +406,6 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/b
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_mem/bp_be_mem_top.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
 set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_ctrl.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
@@ -443,6 +432,11 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_mul.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_be/src/v/bp_be_calculator/bp_be_pipe_sys.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -657,11 +651,6 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_core_complex.v
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/include/bp_fe_lce.vh"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "Verilog Header" -objects $file_obj
-
 set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/include/bp_fe_icache_pkg.vh"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
@@ -692,21 +681,6 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_instr_scan.v
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_lce.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_lce_cmd.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_lce_req.v"
-
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
-
 set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_mem.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
@@ -718,6 +692,21 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_fe/src/v/bp_fe_top.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/lce/bp_lce.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/lce/bp_lce_req.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_me/src/v/lce/bp_lce_cmd.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -857,7 +846,12 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_common/src/v/bp_pma.v"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_processor.v"
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_multicore.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/bp_top/src/v/bp_unicore.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -888,6 +882,11 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_arb_fixed.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_adder_one_hot.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -1022,6 +1021,11 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
+set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_counter_up_down_variable.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
 set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_crossbar_o_by_i.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
@@ -1057,12 +1061,22 @@ set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
+set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset_en_bypass.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
 set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset_en.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_dff_reset_set_clear.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -1283,6 +1297,16 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_reduce_segmented.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_rotate_left.v"
+
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "${DV_ROOT}/design/chip/tile/blackparrot/external/basejump_stl/bsg_misc/bsg_rotate_right.v"
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj

@@ -125,6 +125,8 @@ puts "INFO: Using Defines: ${ALL_DEFAULT_VERILOG_MACROS}"
 
 # Pre-process PyHP files
 source $DV_ROOT/tools/src/proto/common/pyhp_preprocess.tcl
+unset ::env(PYTHONPATH)    
+unset ::env(PYTHONHOME)
 set ALL_RTL_IMPL_FILES [pyhp_preprocess ${ALL_RTL_IMPL_FILES}]
 set ALL_INCLUDE_FILES [pyhp_preprocess ${ALL_INCLUDE_FILES}]
 
@@ -137,6 +139,7 @@ if  {[info exists ::env(PITON_RV64_PLATFORM)]} {
   # otherwise this command fails...
   exec make clean 2> /dev/null
   exec make all 2> /dev/null
+  puts "INFO: done"
   cd $::env(ARIANE_ROOT)/openpiton/bootrom/linux
   # Note: dd dumps info to stderr that we do not want to interpret
   # otherwise this command fails...
