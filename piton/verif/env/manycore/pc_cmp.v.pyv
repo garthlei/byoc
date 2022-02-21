@@ -256,6 +256,27 @@ endtask // get_thread_status
                     spc0_inst_done <= `PICO_CORE0.launch_next_insn;
                     spc0_phy_pc_w <= {{16{`PICO_CORE0.reg_pc[31]}}, `PICO_CORE0.reg_pc[31:0]};
                 end
+        `else // RTL_PICO0
+        `ifdef RTL_MOR1KX0
+                assign spc0_thread_id = 2'b00;
+                assign spc0_rtl_pc = spc0_phy_pc_w;
+
+                always @*
+                begin
+                    if (`MOR1KX_CORE0.wake_up_d == 1'b1)
+                    begin
+                        active_thread[(0*4)] = 1'b1;
+                        active_thread[(0*4)+1] = 1'b1;
+                        active_thread[(0*4)+2] = 1'b1;
+                        active_thread[(0*4)+3] = 1'b1;
+                    end
+                end
+
+                always @(posedge clk) begin
+                    spc0_inst_done <= `MOR1KX_CORE0.fetch_valid_o;
+                    spc0_phy_pc_w <= {{16{`MOR1KX_CORE0.pc_fetch_to_decode[31]}}, `MOR1KX_CORE0.pc_fetch_to_decode[31:0]};
+                end
+        `endif // RTL_MOR1KX0
         `endif // RTL_PICO0
         `endif // RTL_ARIANE0
         `endif // RTL_SPARC0
