@@ -1133,7 +1133,9 @@ if (TILE_TYPE == `ANYCORE_TILE) begin : g_anycore_core
         .mem2dcStComplete_i (anycore_mem2dc_stcomplete),
         .mem2dcStStall_i    (anycore_mem2dc_ststall   ),
 
-        .anycore_int        (anycore_int)
+        .anycore_int        (anycore_int),
+
+        .hartId_i   ({{64-`JTAG_FLATID_WIDTH{1'b0}}, flat_tileid})
     );
 
     anycore_decoder anycore_decoder(
