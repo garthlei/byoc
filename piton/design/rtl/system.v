@@ -506,7 +506,7 @@ wire                test_start;
 wire                uart_rst_out_n;
 `endif
 
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
 // Debug
 wire                     ndmreset;    // non-debug module reset
 wire                     dmactive;    // debug module is active
@@ -803,7 +803,7 @@ chip chip(
     .offchip_processor_noc3_data    (offchip_processor_noc3_data),
     .offchip_processor_noc3_yummy   (offchip_processor_noc3_yummy)
 `endif // endif PITON_NO_CHIP_BRIDGE
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     .ndmreset_i                     ( ndmreset                   ), // non-debug module reset
@@ -1194,7 +1194,7 @@ chipset chipset(
 `endif
     .leds(leds)
 
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     .ndmreset_o                     ( ndmreset                   ), // non-debug module reset

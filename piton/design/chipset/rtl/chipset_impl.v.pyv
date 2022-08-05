@@ -263,7 +263,7 @@ module chipset_impl(
     output                                      net_phy_mdc
 `endif // PITON_FPGA_ETHERNETLITE
 `endif // endif PITONSYS_IO_CTRL
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     output                                      ndmreset_o,    // non-debug module reset
@@ -283,7 +283,7 @@ module chipset_impl(
     output [`PITON_NUM_TILES-1:0]                     ipi_o,         // software interrupt (a.k.a inter-process-interrupt)
     // PLIC
     output [`PITON_NUM_TILES*2-1:0]                   irq_o          // level sensitive IR lines, mip & sip (async)
-`endif
+`endif // PITON_RV64_PLATFORM
 );
 
 ///////////////////////

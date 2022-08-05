@@ -476,7 +476,7 @@ module chipset(
 
 `endif  // PITON_BOARD
 
-`ifdef PITON_ARIANE
+`ifdef PITON_RV64_PLATFORM
     ,
     // Debug
     output                                      ndmreset_o,    // non-debug module reset
@@ -496,7 +496,7 @@ module chipset(
     output  [`PITON_NUM_TILES-1:0]                    ipi_o,         // software interrupt (a.k.a inter-process-interrupt)
     // PLIC
     output  [`PITON_NUM_TILES*2-1:0]                  irq_o          // level sensitive IR lines, mip & sip (async)
-`endif
+`endif // PITON_RV64_PLATFORM
 
 );
 
@@ -1414,7 +1414,7 @@ chipset_impl_noc_power_test  chipset_impl (
             `endif // PITON_FPGA_ETHERNETLITE   
     `endif // endif PITONSYS_IOCTRL
 
-    `ifdef PITON_ARIANE
+    `ifdef PITON_RV64_PLATFORM
         ,
         .ndmreset_o             ( ndmreset_o    ),
         .dmactive_o             ( dmactive_o    ),
