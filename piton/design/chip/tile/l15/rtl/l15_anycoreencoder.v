@@ -64,6 +64,7 @@ reg load_reg;
 reg load_next;
 
 wire [63:0] l15_anycoreencoder_address_sext;
+wire [63:0] l15_anycoreencoder_address_zext;
 
 wire [63:0] l15_anycoreencoder_data_0_swap = {l15_anycoreencoder_data_0[7:0], l15_anycoreencoder_data_0[15:8], l15_anycoreencoder_data_0[23:16], l15_anycoreencoder_data_0[31:24], l15_anycoreencoder_data_0[39:32], l15_anycoreencoder_data_0[47:40], l15_anycoreencoder_data_0[55:48], l15_anycoreencoder_data_0[63:56]};
 wire [63:0] l15_anycoreencoder_data_1_swap = {l15_anycoreencoder_data_1[7:0], l15_anycoreencoder_data_1[15:8], l15_anycoreencoder_data_1[23:16], l15_anycoreencoder_data_1[31:24], l15_anycoreencoder_data_1[39:32], l15_anycoreencoder_data_1[47:40], l15_anycoreencoder_data_1[55:48], l15_anycoreencoder_data_1[63:56]};
@@ -93,14 +94,15 @@ end
 assign anycore_mem2dc_ststall = (store_reg == STORE_ACTIVE) | anycore_dc2mem_stvalid | (load_reg == LOAD_ACTIVE) | anycore_dc2mem_ldvalid;
 
 assign l15_anycoreencoder_address_sext = {{24{l15_anycoreencoder_address[`PHY_ADDR_WIDTH-1]}}, l15_anycoreencoder_address};
+assign l15_anycoreencoder_address_zext = {{24{1'b0}}, l15_anycoreencoder_address};
 assign anycoreencoder_l15_req_ack = l15_anycoreencoder_val;
 
-assign anycore_mem2ic_tag = l15_anycoreencoder_address_sext[63:64-`ICACHE_TAG_BITS];
-assign anycore_mem2ic_index = l15_anycoreencoder_address_sext[64-`ICACHE_TAG_BITS-1:64-`ICACHE_TAG_BITS-`ICACHE_INDEX_BITS];
+assign anycore_mem2ic_tag = l15_anycoreencoder_address_zext[63:64-`ICACHE_TAG_BITS];
+assign anycore_mem2ic_index = l15_anycoreencoder_address_zext[64-`ICACHE_TAG_BITS-1:64-`ICACHE_TAG_BITS-`ICACHE_INDEX_BITS];
 assign anycore_mem2ic_data[`ICACHE_BITS_IN_LINE-1:0] = {l15_anycoreencoder_data_3_swap, l15_anycoreencoder_data_2_swap, l15_anycoreencoder_data_1_swap, l15_anycoreencoder_data_0_swap};
 
-assign anycore_mem2dc_ldtag = l15_anycoreencoder_address_sext[63:64-`DCACHE_TAG_BITS];
-assign anycore_mem2dc_ldindex = l15_anycoreencoder_address_sext[64-`DCACHE_TAG_BITS-1:64-`DCACHE_TAG_BITS-`DCACHE_INDEX_BITS];
+assign anycore_mem2dc_ldtag = l15_anycoreencoder_address_zext[63:64-`DCACHE_TAG_BITS];
+assign anycore_mem2dc_ldindex = l15_anycoreencoder_address_zext[64-`DCACHE_TAG_BITS-1:64-`DCACHE_TAG_BITS-`DCACHE_INDEX_BITS];
 //assign anycore_mem2dc_lddata[`DCACHE_BITS_IN_LINE-1:0] = {{l15_anycoreencoder_data_3_swap, l15_anycoreencoder_data_2_swap, l15_anycoreencoder_data_1_swap, l15_anycoreencoder_data_0_swap}, {l15_anycoreencoder_data_3_swap, l15_anycoreencoder_data_2_swap, l15_anycoreencoder_data_1_swap, l15_anycoreencoder_data_0_swap}};
 //assign anycore_mem2dc_lddata[`DCACHE_BITS_IN_LINE-1:0] = {l15_anycoreencoder_data_3_swap, l15_anycoreencoder_data_2_swap, l15_anycoreencoder_data_1_swap, l15_anycoreencoder_data_0_swap};
 assign anycore_mem2dc_lddata[`DCACHE_BITS_IN_LINE-1:0] = {l15_anycoreencoder_data_1_swap, l15_anycoreencoder_data_0_swap};
