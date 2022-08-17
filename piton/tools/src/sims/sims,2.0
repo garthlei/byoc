@@ -1186,7 +1186,7 @@ sub gen_flist
         my $linetmpout = (split(' ',substr($line, 0, -3)))[-1] . ".tmp." . substr($line, -2, 1);
         if (-e $linepyv) {
           # print("original is $line\n");
-          system("pyhp.py $linepyv > $linetmpout");
+          !system("pyhp.py $linepyv > $linetmpout") or die("Error running PyHP for $linepyv\n");;
           $line = $linetmp . "\n";
         }
       }
@@ -1279,9 +1279,9 @@ sub pre_build
 
   if($opt{ariane}) {
     print "compiling DTS and bootroms for Ariane...\n";
-    !system("cd $ENV{ARIANE_ROOT}/openpiton/bootrom/baremetal && make clean && make all && cd - > /dev/null") or
+    !system("cd $ENV{DV_ROOT}/design/chipset/rv64_platform/bootrom/baremetal && make clean && make all && cd - > /dev/null") or
       die (" Error compiling DTS for ariane.");
-    !system("cd $ENV{ARIANE_ROOT}/openpiton/bootrom/linux && make clean && make all MAX_HARTS=$ENV{PITON_NUM_TILES} && cd - > /dev/null") or
+    !system("cd $ENV{DV_ROOT}/design/chipset/rv64_platform/bootrom/linux && make clean && make all MAX_HARTS=$ENV{PITON_NUM_TILES} && cd - > /dev/null") or
       die (" Error compiling DTS for ariane.");
     print "done\n";
     # currently we have two sources (hardcoded in chipset_impl): UART and Ethernet
@@ -2828,11 +2828,16 @@ sub parse_args
   $ENV{PITON_PICO_HET} = $opt{pico_het};
   $ENV{PITON_ARIANE}   = $opt{ariane};
   $ENV{PITON_ANYCORE}  = $opt{anycore};
+  $ENV{PITON_RV64_PLATFORM}   = "1" if ($opt{ariane}) or ($opt{anycore});
   push (@{$opt{config_rtl}}, "PITON_OST1")     if ($opt{ost1});
   push (@{$opt{config_rtl}}, "PITON_PICO")     if ($opt{pico});
   push (@{$opt{config_rtl}}, "PITON_PICO")     if ($opt{pico_het});
   push (@{$opt{config_rtl}}, "PITON_PICO_HET") if ($opt{pico_het});
   push (@{$opt{config_rtl}}, "PITON_ARIANE")   if ($opt{ariane});
+  push (@{$opt{config_rtl}}, "PITON_RV64_PLATFORM")   if ($opt{ariane});
+  push (@{$opt{config_rtl}}, "PITON_RV64_DEBUGUNIT")   if ($opt{ariane});
+  push (@{$opt{config_rtl}}, "PITON_RV64_CLINT")   if ($opt{ariane});
+  push (@{$opt{config_rtl}}, "PITON_RV64_PLIC")   if ($opt{ariane});
   push (@{$opt{config_rtl}}, "WT_DCACHE")      if ($opt{ariane});
   push (@{$opt{config_rtl}}, "PITON_ANYCORE")  if ($opt{anycore});
   push (@{$opt{config_rtl}}, "SIM")  if ($opt{anycore});
