@@ -1103,6 +1103,9 @@ if (TILE_TYPE == `ANYCORE_TILE) begin : g_anycore_core
         .rst_n(rst_n_f),
         .spc_grst_l (spc_grst_l),
 
+        //.startPC_i          (64'hfff1010000),
+        .startPC_i          (64'h80000000),
+
         .regAddr_i (6'b0),
         .regWrData_i (64'b0),
         .regWrEn_i (1'b0),
