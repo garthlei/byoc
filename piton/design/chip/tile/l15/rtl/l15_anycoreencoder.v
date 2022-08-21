@@ -39,6 +39,14 @@ module l15_anycoreencoder(
     output [`DCACHE_BITS_IN_LINE-1:0]   anycore_mem2dc_lddata,
     output reg                             anycore_mem2dc_ldvalid,
 
+    output                              anycore_mem2dc_invvalid,
+    output [`DCACHE_INDEX_BITS-1:0]     anycore_mem2dc_invindex,
+    output [0:0]                        anycore_mem2dc_invway,
+
+    output                              anycore_mem2ic_invvalid,
+    output [`ICACHE_INDEX_BITS-1:0]     anycore_mem2ic_invindex,
+    output [0:0]                        anycore_mem2ic_invway,
+
     input                               anycore_dc2mem_stvalid,
     output reg                          anycore_mem2dc_stcomplete,
     output                              anycore_mem2dc_ststall,
@@ -63,6 +71,14 @@ reg store_next;
 reg load_reg;
 reg load_next;
 
+reg dinvalrst_reg;
+reg dinvalrst_next;
+reg iinvalrst_reg;
+reg iinvalrst_next;
+
+reg signal_dcache_inval;
+reg signal_icache_inval;
+
 wire [63:0] l15_anycoreencoder_address_sext;
 wire [63:0] l15_anycoreencoder_address_zext;
 
@@ -84,10 +100,14 @@ always @ (posedge clk) begin
     if (!rst_n) begin
         store_reg <= STORE_IDLE;
         load_reg <= LOAD_IDLE;
+        dinvalrst_reg <= 1'b0;
+        iinvalrst_reg <= 1'b0;
     end
     else begin
         store_reg <= store_next;
         load_reg <= load_next;
+        dinvalrst_reg <= dinvalrst_next;
+        iinvalrst_reg <= iinvalrst_next;
     end
 end
 
@@ -124,25 +144,38 @@ end
 always @ * begin
     store_next = store_reg;
     load_next = load_reg;
+    dinvalrst_next = 1'b0;
+    //iinvalrst_next = 1'b0;
     if (anycore_dc2mem_stvalid) begin
         store_next = STORE_ACTIVE;
     end
     if (anycore_mem2dc_stcomplete) begin
         store_next = STORE_IDLE;
     end
-		if (anycore_dc2mem_ldvalid) begin
-				load_next = LOAD_ACTIVE;
-		end
-		if (anycore_mem2dc_ldvalid) begin
-				load_next = LOAD_IDLE;
-		end
+    if (anycore_dc2mem_ldvalid) begin
+        load_next = LOAD_ACTIVE;
+    end
+    if (anycore_mem2dc_ldvalid) begin
+        load_next = LOAD_IDLE;
+    end
+    if (anycore_mem2dc_invvalid) begin
+        dinvalrst_next = 1'b1;
+    end
+    if (anycore_mem2ic_invvalid) begin
+        iinvalrst_next = 1'b1;
+    end
 end
+
+assign anycore_mem2dc_invvalid = signal_dcache_inval & ~dinvalrst_reg;
+assign anycore_mem2ic_invvalid = signal_icache_inval & ~iinvalrst_reg;
    
 always @ * begin
     //state_next = `STATE_NORMAL;
     anycore_mem2ic_respvalid = 1'b0;
     anycore_mem2dc_stcomplete = 1'b0;
-		anycore_mem2dc_ldvalid = 1'b0;
+    anycore_mem2dc_ldvalid = 1'b0;
+    signal_dcache_inval = 1'b0;
+    signal_icache_inval = 1'b0;
     int_recv = 1'b0;
     if (l15_anycoreencoder_val) begin
         case(l15_anycoreencoder_returntype)
@@ -159,10 +192,19 @@ always @ * begin
         end
         `ST_ACK: begin
             anycore_mem2dc_stcomplete = 1'b1;
+            //TODO: st_ack can have an invalidation
         end
-				`LOAD_RET: begin
-						anycore_mem2dc_ldvalid = 1'b1;
-				end
+        `LOAD_RET: begin
+            anycore_mem2dc_ldvalid = 1'b1;
+        end
+        `EVICT_REQ: begin
+            signal_dcache_inval = l15_anycoreencoder_inval_dcache_inval;
+            anycore_mem2dc_invway = l15_anycoreencoder_inval_way[0];
+            anycore_mem2dc_invindex = l15_anycoreencoder_inval_address_15_4[`DCACHE_INDEX_BITS+4-1:4];
+            signal_icache_inval = l15_anycoreencoder_inval_icache_inval;
+            anycore_mem2ic_invway = l15_anycoreencoder_inval_way[0];
+            anycore_mem2ic_invindex = l15_anycoreencoder_inval_address_15_4[`DCACHE_INDEX_BITS+4-1:4];
+        end
         default: begin
             int_recv = 1'b0;
         end
