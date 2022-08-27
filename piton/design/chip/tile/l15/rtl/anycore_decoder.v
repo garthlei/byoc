@@ -32,7 +32,7 @@ module anycore_decoder(
     output wire        anycoredecoder_l15_invalidate_cacheline,
     output wire        anycoredecoder_l15_blockstore,
     output wire        anycoredecoder_l15_blockinitstore,
-    output wire [1:0]  anycoredecoder_l15_l1rplway,
+    output reg  [1:0]  anycoredecoder_l15_l1rplway,
     output wire [63:0] anycoredecoder_l15_data_next_entry,
     output wire [32:0] anycoredecoder_l15_csm_data
 );
@@ -43,10 +43,13 @@ reg prev_val;
 // Get full address that's 64 bits long since it's otherwise to icache
 // block alignment
 wire [63:0] anycore_imiss_full_addr = anycore_ic2mem_reqaddr << (64-`ICACHE_BLOCK_ADDR_BITS);
+wire [1:0] anycore_imiss_way = anycore_ic2mem_reqaddr[`ICACHE_INDEX_BITS-1:`ICACHE_INDEX_BITS-2-1];
 // Sign extend to 64 bits
 wire [63:0] anycore_store_full_addr = {{((64-`DCACHE_ST_ADDR_BITS)-3){anycore_dc2mem_staddr[`DCACHE_ST_ADDR_BITS-1]}}, (anycore_dc2mem_staddr << 3)};
+wire [1:0] anycore_store_way = anycore_dc2mem_staddr[`DCACHE_INDEX_BITS-1:`DCACHE_INDEX_BITS-2-1];
 // Sign extend to 64 bits
 wire [63:0] anycore_load_full_addr = {{((64-`DCACHE_BLOCK_ADDR_BITS)-4){anycore_dc2mem_ldaddr[`DCACHE_BLOCK_ADDR_BITS-1]}}, (anycore_dc2mem_ldaddr << 4)};
+wire [1:0] anycore_load_way = anycore_dc2mem_ldaddr[`DCACHE_INDEX_BITS-1:`DCACHE_INDEX_BITS-2-1];
 
 wire [63:0] anycore_dc2mem_stdata_flipped = {anycore_dc2mem_stdata[7:0], anycore_dc2mem_stdata[15:8], anycore_dc2mem_stdata[23:16], anycore_dc2mem_stdata[31:24], anycore_dc2mem_stdata[39:32], anycore_dc2mem_stdata[47:40], anycore_dc2mem_stdata[55:48], anycore_dc2mem_stdata[63:56]};
 //wire [63:0] anycore_dc2mem_stdata_flipped = anycore_dc2mem_stdata;
@@ -160,6 +163,7 @@ always @ * begin
         anycoredecoder_l15_data_next = 64'b0;
         anycoredecoder_l15_rqtype_next = `IMISS_RQ;
         anycoredecoder_l15_size_next = `PCX_SZ_4B;
+        anycoredecoder_l15_l1rplway = anycore_imiss_way;
     end
     else if (load_next == ISSUE) begin
         anycoredecoder_l15_address_next = (load_reg == IDLE) ? anycore_load_full_addr_buf_next[`PHY_ADDR_WIDTH-1:0]
@@ -167,6 +171,7 @@ always @ * begin
         anycoredecoder_l15_data_next = 64'b0;
         anycoredecoder_l15_rqtype_next = `LOAD_RQ;
         anycoredecoder_l15_size_next = `PCX_SZ_16B;
+        anycoredecoder_l15_l1rplway = anycore_load_way;
     end
     else if(store_next == ISSUE) begin
         anycoredecoder_l15_address_next = (store_reg == IDLE) ? anycore_store_full_addr_buf_next[`PHY_ADDR_WIDTH-1:0]
@@ -176,12 +181,14 @@ always @ * begin
         anycoredecoder_l15_rqtype_next = `STORE_RQ;
         anycoredecoder_l15_size_next = (store_reg == IDLE) ? anycore_dc2mem_stsize_buf_next
 							   : anycore_dc2mem_stsize_buf;
+        anycoredecoder_l15_l1rplway = anycore_store_way;
     end
     else  begin
         anycoredecoder_l15_address_next = `PHY_ADDR_WIDTH'b0;
         anycoredecoder_l15_data_next = 64'b0;
         anycoredecoder_l15_rqtype_next = 5'b0;
         anycoredecoder_l15_size_next = 3'b0;
+        anycoredecoder_l15_l1rplway = 2'b0;
     end
 
 
@@ -219,8 +226,6 @@ assign anycoredecoder_l15_data_next_entry = 64'b0;
 
 assign anycoredecoder_l15_blockstore = 1'b0;
 assign anycoredecoder_l15_blockinitstore = 1'b0;
-// is this set when something in the l1 gets replaced?
-assign anycoredecoder_l15_l1rplway = 2'b0;
 // will anycore ever need to invalidate cachelines?
 assign anycoredecoder_l15_invalidate_cacheline = 1'b0;
 

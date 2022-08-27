@@ -168,6 +168,10 @@ end
 
 assign anycore_mem2dc_invvalid = signal_dcache_inval & ~dinvalrst_reg;
 assign anycore_mem2ic_invvalid = signal_icache_inval & ~iinvalrst_reg;
+assign anycore_mem2dc_invway = l15_anycoreencoder_inval_way;
+assign anycore_mem2dc_invindex = l15_anycoreencoder_inval_address_15_4[`DCACHE_INDEX_BITS+4-1:4];
+assign anycore_mem2ic_invway = l15_anycoreencoder_inval_way;
+assign anycore_mem2ic_invindex = l15_anycoreencoder_inval_address_15_4[`DCACHE_INDEX_BITS+4-1:4];
    
 always @ * begin
     //state_next = `STATE_NORMAL;
@@ -199,11 +203,7 @@ always @ * begin
         end
         `EVICT_REQ: begin
             signal_dcache_inval = l15_anycoreencoder_inval_dcache_inval;
-            anycore_mem2dc_invway = l15_anycoreencoder_inval_way[0];
-            anycore_mem2dc_invindex = l15_anycoreencoder_inval_address_15_4[`DCACHE_INDEX_BITS+4-1:4];
             signal_icache_inval = l15_anycoreencoder_inval_icache_inval;
-            anycore_mem2ic_invway = l15_anycoreencoder_inval_way[0];
-            anycore_mem2ic_invindex = l15_anycoreencoder_inval_address_15_4[`DCACHE_INDEX_BITS+4-1:4];
         end
         default: begin
             int_recv = 1'b0;
