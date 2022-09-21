@@ -193,7 +193,7 @@ handle_exception:                                                       \
         j write_tohost;                                                 \
 reset_vector:                                                           \
         INIT_XREG;                                                      \
-/*        RISCV_MULTICORE_DISABLE;                                        \
+        RISCV_MULTICORE_DISABLE;                                        \
         INIT_SATP;                                                      \
         INIT_PMP;                                                       \
         DELEGATE_NO_TRAPS;                                              \
@@ -219,7 +219,6 @@ reset_vector:                                                           \
         csrw mepc, t0;                                                  \
         csrr a0, mhartid;                                               \
         mret;                                                           \
-*/      j test_2;
 1:
 
 //-----------------------------------------------------------------------
