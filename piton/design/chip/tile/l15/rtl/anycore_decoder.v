@@ -45,7 +45,8 @@ reg prev_val;
 wire [63:0] anycore_imiss_full_addr = anycore_ic2mem_reqaddr << (64-`ICACHE_BLOCK_ADDR_BITS);
 wire [1:0] anycore_imiss_way = anycore_ic2mem_reqaddr[`ICACHE_INDEX_BITS-1:`ICACHE_INDEX_BITS-2-1];
 // Sign extend to 64 bits
-wire [63:0] anycore_store_full_addr = {{((64-`DCACHE_ST_ADDR_BITS)-3){anycore_dc2mem_staddr[`DCACHE_ST_ADDR_BITS-1]}}, (anycore_dc2mem_staddr << 3)};
+//wire [63:0] anycore_store_full_addr = {{((64-`DCACHE_ST_ADDR_BITS)-3){anycore_dc2mem_staddr[`DCACHE_ST_ADDR_BITS-1]}}, (anycore_dc2mem_staddr << 3)};
+wire [63:0] anycore_store_full_addr = {{((64-`DCACHE_ST_ADDR_BITS)-3){anycore_dc2mem_staddr[`DCACHE_ST_ADDR_BITS-1]}}, (anycore_dc2mem_staddr)};
 wire [1:0] anycore_store_way = anycore_dc2mem_staddr[`DCACHE_INDEX_BITS-1:`DCACHE_INDEX_BITS-2-1];
 // Sign extend to 64 bits
 wire [63:0] anycore_load_full_addr = {{((64-`DCACHE_BLOCK_ADDR_BITS)-4){anycore_dc2mem_ldaddr[`DCACHE_BLOCK_ADDR_BITS-1]}}, (anycore_dc2mem_ldaddr << 4)};

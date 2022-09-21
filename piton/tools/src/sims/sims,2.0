@@ -1384,7 +1384,7 @@ sub generic_sim_build
       push (@{$opt{vcs_build_args}}, "-l compile.log") ;
 
       # some SystemVerilog-specific options
-      if ($opt{ariane}) {
+      if ($opt{ariane} | $opt{anycore}) {
           push (@{$opt{vcs_build_args}}, "-sverilog +systemverilogext+.sv") ;
           push (@{$opt{vcs_build_args}}, "-ntb_opts uvm-1.1 +vpi ") ;
       }
@@ -1513,7 +1513,7 @@ sub generic_sim_build
       $build_cmd .= $lib_path;
 
       # the ariane files do not contain the timescale
-      if ($opt{ariane}) {
+      if ($opt{ariane} | $opt{anycore}) {
         $build_cmd .= " -timescale=1ps/1ps ";
       }
     }
