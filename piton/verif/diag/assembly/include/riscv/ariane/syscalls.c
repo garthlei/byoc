@@ -51,7 +51,7 @@ void printbuf(const char * buf, int buflen) {
   volatile char * uartAddr = (char*)PITON_UART_ADDRESS;
   for (int k=0; k < buflen; k++) {
     // poll bit 5 of the LSR
-    while(!((*(uartAddr+5)) & 0x20));
+//    while(!((*(uartAddr+5)) & 0x20));
     (*uartAddr) = buf[k];
     if(buf[k]=='\n') break;
   }
@@ -151,27 +151,27 @@ void _init(int cid, int nc)
   volatile static uint32_t finish_sync0 = 0;
   volatile static uint32_t finish_sync1 = 0;
 
-  char num[2]   = {cid, nc};
-  char *argv[1] = {num};
+  int num[2]   = {cid, nc};
+  int *argv[1] = {num};
   int ret = main(2, argv);
 
-  ATOMIC_OP(finish_sync0, 1, add, w);
-  //__asm__ __volatile__ (  " amoadd.w zero, %1, %0" : "+A" (finish_sync0) : "r" (1) : "memory");
-  while(finish_sync0 != nc);
+  // ATOMIC_OP(finish_sync0, 1, add, w);
+  // //__asm__ __volatile__ (  " amoadd.w zero, %1, %0" : "+A" (finish_sync0) : "r" (1) : "memory");
+  // while(finish_sync0 != nc);
 
-  // synchronize for debug output below
-  while(finish_sync1 != cid);
+  // // synchronize for debug output below
+  // while(finish_sync1 != cid);
 
-  char buf[NUM_COUNTERS * 32] __attribute__((aligned(64)));
-  char* pbuf = buf;
-  for (int i = 0; i < NUM_COUNTERS; i++)
-    if (counters[i])
-      pbuf += sprintf(pbuf, "core %d: %s = %d\n", cid, counter_names[i], counters[i]);
-  if (pbuf != buf)
-    printstr(buf);
+  // char buf[NUM_COUNTERS * 32] __attribute__((aligned(64)));
+  // char* pbuf = buf;
+  // for (int i = 0; i < NUM_COUNTERS; i++)
+  //   if (counters[i])
+  //     pbuf += sprintf(pbuf, "core %d: %s = %d\n", cid, counter_names[i], counters[i]);
+  // if (pbuf != buf)
+  //   printstr(buf);
 
-  ATOMIC_OP(finish_sync1, 1, add, w);
-  //__asm__ __volatile__ (  " amoadd.w zero, %1, %0" : "+A" (finish_sync1) : "r" (1) : "memory");
+  // ATOMIC_OP(finish_sync1, 1, add, w);
+  // //__asm__ __volatile__ (  " amoadd.w zero, %1, %0" : "+A" (finish_sync1) : "r" (1) : "memory");
 
   exit(ret);
  

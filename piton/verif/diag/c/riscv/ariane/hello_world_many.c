@@ -30,7 +30,10 @@ int main(int argc, char** argv) {
   printf("Hello world, this is hart %d of %d harts!\n", argv[0][0], argv[0][1]);
 
   // increment atomic counter
-  ATOMIC_OP(amo_cnt, 1, add, w);
+  //ATOMIC_OP(amo_cnt, 1, add, w);
+  while(amo_cnt < 200) {
+    amo_cnt++;
+  }
 
   return 0;
 }
