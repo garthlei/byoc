@@ -1162,6 +1162,7 @@ if (TILE_TYPE == `ANYCORE_TILE) begin : g_anycore_core
         .rst_n                                   (rst_n),
 
         .l15_transducer_ack                      (l15_transducer_ack),
+        .l15_transducer_header_ack               (l15_transducer_header_ack),
     
         .anycore_ic2mem_reqaddr                  (anycore_ic2mem_reqaddr),
         .anycore_ic2mem_reqvalid                 (anycore_ic2mem_reqvalid),

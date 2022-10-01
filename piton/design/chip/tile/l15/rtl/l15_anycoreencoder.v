@@ -184,12 +184,7 @@ always @ * begin
     if (l15_anycoreencoder_val) begin
         case(l15_anycoreencoder_returntype)
         `INT_RET: begin
-            if (l15_anycoreencoder_data_0[17:16] == 2'b01) begin
-                int_recv = 1'b1;
-            end
-            else begin
-                int_recv = 1'b0;
-            end
+            int_recv = 1'b1;
         end
         `IFILL_RET: begin
             anycore_mem2ic_respvalid = 1'b1;
@@ -197,6 +192,8 @@ always @ * begin
         `ST_ACK: begin
             anycore_mem2dc_stcomplete = 1'b1;
             //TODO: st_ack can have an invalidation
+            signal_dcache_inval = l15_anycoreencoder_inval_dcache_inval;
+            signal_icache_inval = l15_anycoreencoder_inval_icache_inval;
         end
         `LOAD_RET: begin
             anycore_mem2dc_ldvalid = 1'b1;

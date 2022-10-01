@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include "util.h"
 
-int main(int argc, char** argv) {
+int main(int argc, int** argv) {
 
   // synchronization variable
   volatile static uint32_t amo_cnt = 0;
@@ -31,9 +31,14 @@ int main(int argc, char** argv) {
 
   // increment atomic counter
   //ATOMIC_OP(amo_cnt, 1, add, w);
-  while(amo_cnt < 200) {
-    amo_cnt++;
+  amo_cnt++;
+
+  int wait = 0;
+  while(wait < 200) {
+    wait++;
   }
+
+  while (amo_cnt != argv[0][1]);
 
   return 0;
 }

@@ -5,6 +5,7 @@ module anycore_decoder(
     input wire         rst_n,
 
     input l15_transducer_ack,
+    input l15_transducer_header_ack,
 
     input [`ICACHE_BLOCK_ADDR_BITS-1:0] anycore_ic2mem_reqaddr,
     input                               anycore_ic2mem_reqvalid,
@@ -39,6 +40,8 @@ module anycore_decoder(
 
 reg current_val;
 reg prev_val;
+reg header_ack_seen_next;
+reg header_ack_seen_reg;
 
 // Get full address that's 64 bits long since it's otherwise to icache
 // block alignment
@@ -91,21 +94,23 @@ always @ (posedge clk) begin
         store_reg <= IDLE;
         load_reg <= IDLE;
         imiss_reg <= IDLE;
-	anycore_store_full_addr_buf <= 64'b0;
-	anycore_dc2mem_stdata_flipped_buf   <= {`SIZE_DATA{1'b0}};
-	anycore_dc2mem_stsize_buf   <= 3'b0;
-	anycore_load_full_addr_buf  <= 64'b0;
-	anycore_imiss_full_addr_buf  <= 64'b0;
+        header_ack_seen_reg <= 1'b0;
+        anycore_store_full_addr_buf <= 64'b0;
+        anycore_dc2mem_stdata_flipped_buf   <= {`SIZE_DATA{1'b0}};
+        anycore_dc2mem_stsize_buf   <= 3'b0;
+        anycore_load_full_addr_buf  <= 64'b0;
+        anycore_imiss_full_addr_buf  <= 64'b0;
     end
     else begin
         store_reg <= store_next;
         load_reg <= load_next;
         imiss_reg <= imiss_next;
-	anycore_store_full_addr_buf <= anycore_store_full_addr_buf_next;
-	anycore_dc2mem_stdata_flipped_buf   <= anycore_dc2mem_stdata_flipped_buf_next;
-	anycore_dc2mem_stsize_buf   <= anycore_dc2mem_stsize_buf_next;
-	anycore_load_full_addr_buf  <= anycore_load_full_addr_buf_next;
-	anycore_imiss_full_addr_buf  <= anycore_imiss_full_addr_buf_next;
+        header_ack_seen_reg <= header_ack_seen_next;
+        anycore_store_full_addr_buf <= anycore_store_full_addr_buf_next;
+        anycore_dc2mem_stdata_flipped_buf   <= anycore_dc2mem_stdata_flipped_buf_next;
+        anycore_dc2mem_stsize_buf   <= anycore_dc2mem_stsize_buf_next;
+        anycore_load_full_addr_buf  <= anycore_load_full_addr_buf_next;
+        anycore_imiss_full_addr_buf  <= anycore_imiss_full_addr_buf_next;
     end
 end
 
@@ -113,6 +118,7 @@ always @ * begin
     store_next = store_reg;
     load_next = load_reg;
     imiss_next = imiss_reg;
+    header_ack_seen_next = header_ack_seen_reg;
     anycore_store_full_addr_buf_next = anycore_store_full_addr_buf;
     anycore_dc2mem_stdata_flipped_buf_next   = anycore_dc2mem_stdata_flipped_buf;
     anycore_dc2mem_stsize_buf_next   = anycore_dc2mem_stsize_buf;
@@ -123,6 +129,10 @@ always @ * begin
         store_next = (store_reg == ISSUE) ? IDLE : store_reg;
         load_next = (load_reg == ISSUE) ? IDLE: load_reg;
         imiss_next = (imiss_reg == ISSUE) ? IDLE: imiss_reg;
+        header_ack_seen_next = 1'b0;
+    end
+    else if (l15_transducer_header_ack) begin
+        header_ack_seen_next = 1'b1;
     end
     // New requests arrive
     if (anycore_dc2mem_stvalid) begin
@@ -210,7 +220,7 @@ begin
     else begin
         current_val <= anycore_ic2mem_reqvalid | anycore_dc2mem_stvalid | anycore_dc2mem_ldvalid;
         prev_val <= current_val;
-        anycoredecoder_l15_val <= (imiss_next == ISSUE) | (load_next == ISSUE) | (store_next == ISSUE);
+        anycoredecoder_l15_val <= ((imiss_next == ISSUE) | (load_next == ISSUE) | (store_next == ISSUE)) & ~header_ack_seen_next;
 	//anycore_ic2mem_reqvalid | anycore_dc2mem_ldvalid | anycore_dc2mem_stvalid | store_next;//anycore_dc2mem_stvalid | anycore_dc2mem_ldvalid | store_reg;// | load_reg;
         anycoredecoder_l15_address <= anycoredecoder_l15_address_next;
         anycoredecoder_l15_data <= anycoredecoder_l15_data_next;
