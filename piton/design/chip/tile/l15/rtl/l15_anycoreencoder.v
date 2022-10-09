@@ -111,7 +111,7 @@ always @ (posedge clk) begin
     end
 end
 
-assign anycore_mem2dc_ststall = (store_reg == STORE_ACTIVE) | anycore_dc2mem_stvalid | (load_reg == LOAD_ACTIVE) | anycore_dc2mem_ldvalid;
+assign anycore_mem2dc_ststall = (store_reg == STORE_ACTIVE) | anycore_dc2mem_stvalid;
 
 assign l15_anycoreencoder_address_sext = {{24{l15_anycoreencoder_address[`PHY_ADDR_WIDTH-1]}}, l15_anycoreencoder_address};
 assign l15_anycoreencoder_address_zext = {{24{1'b0}}, l15_anycoreencoder_address};
