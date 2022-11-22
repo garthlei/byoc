@@ -2238,6 +2238,8 @@ sub assemble_diag
     elsif ($opt{precompiled} and ($opt{rv32} | $opt{rv64})) { $diag_name = "diag.exe"  ; }
     elsif (($opt{rv32} | $opt{rv64}) and ($opt{asm_diag_name} =~ /\.S/)) { $diag_name = "diag.S" ; }
     elsif (($opt{rv32} | $opt{rv64}) and ($opt{asm_diag_name} =~ /\.c/)) { $diag_name = "diag.c" ; }
+    elsif (($opt{or1k}) and ($opt{asm_diag_name} =~ /\.s/)) { $diag_name = "diag.s" ; }
+    elsif (($opt{or1k}) and ($opt{asm_diag_name} =~ /\.c/)) { $diag_name = "diag.c" ; }
     else { $diag_name = "diag.s" ; }
 
     # copy diagnostic to run area
@@ -2413,13 +2415,23 @@ sub assemble_diag
       }
     }
     if ($opt{or1k}) {
-      print "$prg: assembling or1k diag\n" ;
-      my $cmd = "or1k_as " ;
-      #$cmd .= join (" ", @{$opt{midas_args}}) ;
-      print "$prg: $cmd\n";
+      if ($diag_name eq "diag.s") {
+        print "$prg: assembling or1k diag\n" ;
+        my $cmd = "or1k_as " ;
+        #$cmd .= join (" ", @{$opt{midas_args}}) ;
+        print "$prg: $cmd\n";
 
-      my $waitstatus = call_program($cmd, "or1k_as.log");
-      die ("DIE. or1k_as compilation error") if ($waitstatus) ;
+        my $waitstatus = call_program($cmd, "or1k_as.log");
+        die ("DIE. or1k_as compilation error") if ($waitstatus) ;
+      } else {
+        print "$prg: assembling or1k C diag\n" ;
+        my $cmd = "or1k_cc " ;
+        #$cmd .= join (" ", @{$opt{midas_args}}) ;
+        print "$prg: $cmd\n";
+
+        my $waitstatus = call_program($cmd, "or1k_cc.log");
+        die ("DIE. or1k_cc compilation error") if ($waitstatus) ;
+      }
     }
 
     exit (0) if ($opt{midas_only}) ;
