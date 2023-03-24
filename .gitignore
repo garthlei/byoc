@@ -2,6 +2,7 @@
 *.swp
 *.log
 *a.out
+.DS_Store
 
 # Ignore everything in model directory
 build/*

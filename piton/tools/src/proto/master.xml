@@ -30,6 +30,10 @@
     <board name="genesys2">
         <uart-dmw>ddr</uart-dmw>
     </board>
+
+    <board name="stlv7325">
+        <uart-dmw>ddr</uart-dmw>
+    </board>
     
     <board name="vc707">
         <uart-dmw>ddr</uart-dmw>
@@ -46,10 +50,20 @@
         <chip-bridge></chip-bridge>
         <inc-passthru></inc-passthru>
     </board>
+
+    <board name="stlv7325">
+        <uart-dmw>ddr</uart-dmw>
+        <chip-bridge></chip-bridge>
+        <inc-passthru></inc-passthru>
+    </board>
 </chipset>
 
 <chip>
     <board name="genesys2">
+        <chip-bridge></chip-bridge>
+    </board>
+    
+    <board name="stlv7325">
         <chip-bridge></chip-bridge>
     </board>
 </chip>

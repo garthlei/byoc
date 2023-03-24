@@ -468,6 +468,8 @@ module chipset(
         input  [3:0]                                        sw,
     `elsif XUPP3R_BOARD
         // no switches :(
+    `elsif STLV7325_BOARD
+        // no switches
     `else         
         input  [7:0]                                        sw,
     `endif
@@ -755,6 +757,9 @@ end
             `elsif XUPP3R_BOARD
                 assign uart_boot_en    = 1'b1;
                 assign uart_timeout_en = 1'b0;
+            `elsif STLV7325_BOARD
+                assign uart_boot_en    = 1'b1;
+                assign uart_timeout_en = 1'b0;
             `else 
                 assign uart_boot_en    = sw[7];
                 assign uart_timeout_en = sw[6];
@@ -768,6 +773,9 @@ end
         // only two switches available...
         assign noc_power_test_hop_count = {2'b0, sw[3:2]};
     `elsif XUPP3R_BOARD
+        // no switches :(
+        assign noc_power_test_hop_count = 4'b0;
+    `elsif STLV7325_BOARD
         // no switches :(
         assign noc_power_test_hop_count = 4'b0;
     `else 
