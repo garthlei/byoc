@@ -74,11 +74,11 @@ set_property IOSTANDARD LVCMOS33 [get_ports uart_rx]
 set_property PACKAGE_PIN L25 [get_ports uart_rx]
 set_property IOSTANDARD LVCMOS33 [get_ports uart_tx]
 set_property PACKAGE_PIN M25 [get_ports uart_tx]
-# ## PMOD UART
-# set_property IOSTANDARD LVCMOS33 [get_ports uart_rx2]
-# set_property PACKAGE_PIN AK30 [get_ports uart_rx2]
-# set_property IOSTANDARD LVCMOS33 [get_ports uart_tx2]
-# set_property PACKAGE_PIN AK28 [get_ports uart_tx2]
+## Secondary UART
+set_property IOSTANDARD LVCMOS33 [get_ports uart_rx2]
+set_property PACKAGE_PIN G20 [get_ports uart_rx2]
+set_property IOSTANDARD LVCMOS33 [get_ports uart_tx2]
+set_property PACKAGE_PIN L20 [get_ports uart_tx2]
 
 # We do not have switches on STLV7325
 # # Switches

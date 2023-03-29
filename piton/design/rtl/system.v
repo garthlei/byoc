@@ -308,8 +308,8 @@ module system(
     output                                      uart_tx,
     input                                       uart_rx,
 `ifdef PITONSYS_UART2
-    // output                                      uart_tx2,
-    // input                                       uart_rx2,
+    output                                      uart_tx2,
+    input                                       uart_rx2,
 `endif // ifdef PITONSYS_UART2
 `ifdef VCU118_BOARD
 		input                                       uart_cts,
@@ -530,11 +530,6 @@ wire  [`NUM_TILES-1:0]   irq;         // level sensitive IR lines, mip & sip (as
 
 `endif
 
-`ifdef PITONSYS_UART2
-wire uart_tx2;
-wire uart_rx2;
-`endif
-
 `ifdef STLV7325_BOARD
 wire [7:1] leds_n;
 `endif
@@ -567,10 +562,6 @@ assign rtc = rtc_div[6];
 
 `ifdef STLV7325_BOARD
 assign leds = ~leds_n;
-`endif
-
-`ifdef PITONSYS_UART2
-assign uart_rx2 = 1'b1;
 `endif
 
 `ifdef VCU118_BOARD
