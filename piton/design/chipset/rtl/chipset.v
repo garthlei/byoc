@@ -336,9 +336,11 @@ module chipset(
 
 
     `ifdef PITONSYS_SPI
+        `ifndef STLV7325_BOARD
         `ifndef VC707_BOARD
         input                                       sd_cd,
         output                                      sd_reset,
+        `endif
         `endif
         output                                      sd_clk_out,
         inout                                       sd_cmd,
@@ -1400,12 +1402,15 @@ chipset_impl_noc_power_test  chipset_impl (
         `ifdef PITONSYS_SPI
             ,
             .sd_clk(sd_sys_clk),
-            `ifndef VC707_BOARD
-            .sd_cd(sd_cd),
-            .sd_reset(sd_reset),
-            `else
+            `ifdef VC707_BOARD
             .sd_cd(0),
             .sd_reset(),
+            `elsif STLV7325_BOARD
+            .sd_cd(0),
+            .sd_reset(),
+            `else
+            .sd_cd(sd_cd),
+            .sd_reset(sd_reset),
             `endif
             .sd_clk_out(sd_clk_out_internal),
             .sd_cmd(sd_cmd),

@@ -181,11 +181,13 @@ module system(
 `ifndef NEXYSVIDEO_BOARD
 `ifndef XUPP3R_BOARD
 `ifndef F1_BOARD
+`ifndef STLV7325_BOARD
   input                                         tck_i,
   input                                         tms_i,
   input                                         trst_ni,
   input                                         td_i,
   output                                        td_o,
+`endif //STLV7325_BOARD
 `endif//F1_BOARD
 `endif//XUPP3R_BOARD
 `endif //NEXYSVIDEO_BOARD
@@ -316,10 +318,12 @@ module system(
 `endif // endif PITONSYS_UART
 
 `ifdef PITONSYS_SPI
+    `ifndef STLV7325_BOARD
     `ifndef VC707_BOARD
     input                                       sd_cd,
     `ifndef VCU118_BOARD
     output                                      sd_reset,
+    `endif
     `endif
     `endif
     output                                      sd_clk_out,
@@ -390,6 +394,7 @@ module system(
     input  [3:0]                                sw,
 `elsif XUPP3R_BOARD
     // no switches :(
+`elsif STLV7325_BOARD
 `else
     input  [7:0]                                sw,
 `endif
@@ -530,6 +535,9 @@ wire uart_tx2;
 wire uart_rx2;
 `endif
 
+`ifdef STLV7325_BOARD
+wire [7:1] leds_n;
+`endif
 //////////////////////
 // Sequential Logic //
 //////////////////////
@@ -556,6 +564,10 @@ assign rtc = rtc_div[6];
 /////////////////////////
 // Combinational Logic //
 /////////////////////////
+
+`ifdef STLV7325_BOARD
+assign leds = ~leds_n;
+`endif
 
 `ifdef PITONSYS_UART2
 assign uart_rx2 = 1'b1;
@@ -1150,10 +1162,12 @@ chipset chipset(
 `endif // endif PITONSYS_UART
 
 `ifdef PITONSYS_SPI
+    `ifndef STLV7325_BOARD
     `ifndef VC707_BOARD
     .sd_cd(sd_cd),
     `ifndef VCU118_BOARD
     .sd_reset(sd_reset),
+    `endif
     `endif
     `endif
     .sd_clk_out(sd_clk_out),
@@ -1207,9 +1221,16 @@ chipset chipset(
 `endif
 
 `ifndef XUPP3R_BOARD
+`ifndef STLV7325_BOARD
     .sw(sw),
 `endif
+`endif
+
+`ifdef STLV7325_BOARD
+    .leds(leds_n)
+`else
     .leds(leds)
+`endif
 
 `ifdef PITON_ARIANE
     ,

@@ -23,6 +23,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+set_property BITSTREAM.CONFIG.UNUSEDPIN pullup [current_design]
+set_property DCI_CASCADE {32 34} [get_iobanks 33]
+
 # Clock signals
 set_property IOSTANDARD DIFF_SSTL15 [get_ports chipset_clk_osc_p]
 set_property PACKAGE_PIN AB11 [get_ports chipset_clk_osc_p]
@@ -119,21 +122,21 @@ set_property -dict {IOSTANDARD LVCMOS33 PACKAGE_PIN P19} [get_ports {sd_dat[3]}]
 ## LEDs
 
 set_property PACKAGE_PIN AA2 [get_ports {leds[0]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[0]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[0]}]
 set_property PACKAGE_PIN AD5 [get_ports {leds[1]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[1]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[1]}]
 set_property PACKAGE_PIN W10 [get_ports {leds[2]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[2]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[2]}]
 set_property PACKAGE_PIN Y10 [get_ports {leds[3]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[3]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[3]}]
 set_property PACKAGE_PIN AE10 [get_ports {leds[4]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[4]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[4]}]
 set_property PACKAGE_PIN W11 [get_ports {leds[5]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[5]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[5]}]
 set_property PACKAGE_PIN V11 [get_ports {leds[6]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[6]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[6]}]
 set_property PACKAGE_PIN Y12 [get_ports {leds[7]}]
-set_property IOSTANDARD LVCMOS33 [get_ports {leds[7]}]
+set_property IOSTANDARD LVCMOS15 [get_ports {leds[7]}]
 
 
 # ## OLED not available
@@ -197,31 +200,31 @@ set_clock_groups -name sync_gr1 -logically_exclusive -group [get_clocks chipset_
 
 ###############################################################
 
-set_property LOC ILOGIC_X1Y119 [get_cells {chipset/chipset_impl/mc_top/mig_7series_0/u_mig_7series_0_mig/u_memc_ui_top_std/mem_intfc0/ddr_phy_top0/u_ddr_mc_phy_wrapper/gen_dqs_iobuf_HP.gen_dqs_iobuf[2].gen_dqs_diff.u_iddr_edge_det/u_phase_detector}]
-set_property PACKAGE_PIN AG2 [get_ports {ddr_dqs_p[2]}]
-set_property PACKAGE_PIN AH1 [get_ports {ddr_dqs_n[2]}]
+# set_property LOC ILOGIC_X1Y119 [get_cells {chipset/chipset_impl/mc_top/mig_7series_0/u_mig_7series_0_mig/u_memc_ui_top_std/mem_intfc0/ddr_phy_top0/u_ddr_mc_phy_wrapper/gen_dqs_iobuf_HP.gen_dqs_iobuf[2].gen_dqs_diff.u_iddr_edge_det/u_phase_detector}]
+# set_property PACKAGE_PIN AG2 [get_ports {ddr_dqs_p[2]}]
+# set_property PACKAGE_PIN AH1 [get_ports {ddr_dqs_n[2]}]
 
 set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
 
-#############################################
-# Ethernet Constraints for 100 Mb/s
-#############################################
+# #############################################
+# # Ethernet Constraints for 100 Mb/s
+# #############################################
 
-######### Input constraints
-# hint from here: https://forums.xilinx.com/t5/Timing-Analysis/XDC-constraints-Source-Synchronous-ADC-DDR/td-p/292807
-create_clock -period 40.000 -name net_phy_rxc_virt
-# conservatively assuming +/- 2ns skew of rxd/rxctl
-create_clock -period 40.000 -name net_phy_rxc -waveform {2.000 22.000} [get_ports net_phy_rxc]
-set_clock_groups -asynchronous -group [get_clocks chipset_clk_clk_mmcm] -group [get_clocks net_phy_rxc]
-set_input_delay -clock [get_clocks net_phy_rxc_virt] -min -add_delay 0.000 [get_ports {net_phy_rxd[*]}]
-set_input_delay -clock [get_clocks net_phy_rxc_virt] -max -add_delay 4.000 [get_ports {net_phy_rxd[*]}]
-set_input_delay -clock [get_clocks net_phy_rxc_virt] -clock_fall -min -add_delay 0.000 [get_ports net_phy_rxctl]
-set_input_delay -clock [get_clocks net_phy_rxc_virt] -clock_fall -max -add_delay 4.000 [get_ports net_phy_rxctl]
-set_input_delay -clock [get_clocks net_phy_rxc_virt] -min -add_delay 0.000 [get_ports net_phy_rxctl]
-set_input_delay -clock [get_clocks net_phy_rxc_virt] -max -add_delay 4.000 [get_ports net_phy_rxctl]
+# ######### Input constraints
+# # hint from here: https://forums.xilinx.com/t5/Timing-Analysis/XDC-constraints-Source-Synchronous-ADC-DDR/td-p/292807
+# create_clock -period 40.000 -name net_phy_rxc_virt
+# # conservatively assuming +/- 2ns skew of rxd/rxctl
+# create_clock -period 40.000 -name net_phy_rxc -waveform {2.000 22.000} [get_ports net_phy_rxc]
+# set_clock_groups -asynchronous -group [get_clocks chipset_clk_clk_mmcm] -group [get_clocks net_phy_rxc]
+# set_input_delay -clock [get_clocks net_phy_rxc_virt] -min -add_delay 0.000 [get_ports {net_phy_rxd[*]}]
+# set_input_delay -clock [get_clocks net_phy_rxc_virt] -max -add_delay 4.000 [get_ports {net_phy_rxd[*]}]
+# set_input_delay -clock [get_clocks net_phy_rxc_virt] -clock_fall -min -add_delay 0.000 [get_ports net_phy_rxctl]
+# set_input_delay -clock [get_clocks net_phy_rxc_virt] -clock_fall -max -add_delay 4.000 [get_ports net_phy_rxctl]
+# set_input_delay -clock [get_clocks net_phy_rxc_virt] -min -add_delay 0.000 [get_ports net_phy_rxctl]
+# set_input_delay -clock [get_clocks net_phy_rxc_virt] -max -add_delay 4.000 [get_ports net_phy_rxctl]
 
-########## Output Constraints
-create_generated_clock -name net_phy_txc -source [get_pins chipset/net_phy_txc_oddr/C] -divide_by 1 -invert [get_ports net_phy_txc]
+# ########## Output Constraints
+# create_generated_clock -name net_phy_txc -source [get_pins chipset/net_phy_txc_oddr/C] -divide_by 1 -invert [get_ports net_phy_txc]
 
 #############################################
 # SD Card Constraints for 25MHz
